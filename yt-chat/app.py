@@ -13,6 +13,9 @@ from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain import hub
 from langchain_community.document_loaders import WebBaseLoader
+from langchain.chains import MapReduceDocumentsChain, ReduceDocumentsChain
+from langchain.text_splitter import CharacterTextSplitter
+
 
 app = Flask(__name__)
 chat_history = {}
@@ -64,8 +67,10 @@ def get_text_chunks_langchain(text):
     Returns:
         list: List of LangChain Document objects.
     """
-    text_splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=100)
+    #text_splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=200)
     docs = [Document(page_content=x) for x in text_splitter.split_text(text)]
+    # splits = text_splitter.split_documents(docs)
     return docs
 
 def summarize_video(transcript_text):
@@ -80,17 +85,61 @@ def summarize_video(transcript_text):
     """
     docs = get_text_chunks_langchain(transcript_text)
 
-    prompt_template = """Write a detailed summary of the following youtube video transcript. It should be structured in md format with some headings:
-    "{text}"
-    CONCISE SUMMARY:"""
-    prompt_langchain = PromptTemplate.from_template(prompt_template)
-
     llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k")
-    llm_chain = LLMChain(llm=llm, prompt=prompt_langchain)
-    stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
 
-    final_summary = stuff_chain.run(docs)
-    return final_summary
+    map_template = """Write a detailed summary of the following youtube video transcript.
+    "{docs}".
+    # CONCISE SUMMARY:"""
+    map_prompt = PromptTemplate.from_template(map_template)
+    map_chain = LLMChain(llm=llm, prompt=map_prompt)
+
+    # llm_chain = LLMChain(llm=llm, prompt=prompt_langchain)
+    # stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
+
+    # final_summary = stuff_chain.run(docs)
+    # return final_summary
+    reduce_template = """The following is set of summaries:
+    {docs}
+    Take these and distill it into a final, consolidated detailed summary. 
+    Helpful Answer:"""
+    reduce_prompt = PromptTemplate.from_template(reduce_template)
+
+    # Run chain
+    reduce_chain = LLMChain(llm=llm, prompt=reduce_prompt)
+
+    # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
+    combine_documents_chain = StuffDocumentsChain(
+        llm_chain=reduce_chain, document_variable_name="docs"
+    )
+
+    # Combines and iteratively reduces the mapped documents
+    reduce_documents_chain = ReduceDocumentsChain(
+        # This is final chain that is called.
+        combine_documents_chain=combine_documents_chain,
+        # If documents exceed context for `StuffDocumentsChain`
+        collapse_documents_chain=combine_documents_chain,
+        # The maximum number of tokens to group documents into.
+        token_max=4000,
+    )
+
+    # Combining documents by mapping a chain over them, then combining results
+    map_reduce_chain = MapReduceDocumentsChain(
+        # Map chain
+        llm_chain=map_chain,
+        # Reduce chain
+        reduce_documents_chain=reduce_documents_chain,
+        # The variable name in the llm_chain to put the documents in
+        document_variable_name="docs",
+        # Return the results of the map steps in the output
+        return_intermediate_steps=False,
+    )
+
+    text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
+        chunk_size=4096, chunk_overlap=0
+    )
+    split_docs = text_splitter.split_documents(docs)
+
+    return map_reduce_chain.run(split_docs)
 
 def answer_question_video(docs, question):
     """
