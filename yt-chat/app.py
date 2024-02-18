@@ -37,7 +37,7 @@ def index():
         chat_history[video_url] = []  # Initialize chat history for the video
     return render_template('index.html', video_url=video_url, summary=summary, chat_history=chat_history.get(video_url, []))
 
-@cache
+# @cache
 def get_video_transcript(video_url):
     """
     Get the transcript of a YouTube video.
