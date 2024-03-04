@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, jsonify
 from functools import reduce, cache
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -10,6 +11,7 @@ from langchain.schema.document import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_community.vectorstores import Chroma
+from langchain_community.llms import CTransformers
 from langchain_openai import OpenAIEmbeddings
 from langchain import hub
 from langchain_community.document_loaders import WebBaseLoader
@@ -85,61 +87,70 @@ def summarize_video(transcript_text):
     """
     docs = get_text_chunks_langchain(transcript_text)
 
-    llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k")
+    #llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k")
+    llm = CTransformers(model="TheBloke/Mistral-7B-Instruct-v0.1-GGUF",
+                        #model_file="mistral-7b-instruct-v0.1.Q4_K_M.gguf",
+                        model_file="mistral-7b-instruct-v0.1.Q2_K.gguf",
+                        config={'max_new_tokens': 4096, 'temperature': 0.7, 'context_length': 4096},
+                        threads=os.cpu_count())
 
     map_template = """Write a detailed summary of the following youtube video transcript.
     "{docs}".
     # CONCISE SUMMARY:"""
+    map_template="Give me a list of the colors of the rainbow."
     map_prompt = PromptTemplate.from_template(map_template)
     map_chain = LLMChain(llm=llm, prompt=map_prompt)
+    generated_text = llm("AI is going to")
+    print(generated_text)
 
-    # llm_chain = LLMChain(llm=llm, prompt=prompt_langchain)
-    # stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
+    if False:
+        # llm_chain = LLMChain(llm=llm, prompt=prompt_langchain)
+        # stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
 
-    # final_summary = stuff_chain.run(docs)
-    # return final_summary
-    reduce_template = """The following is set of summaries:
-    {docs}
-    Take these and distill it into a final, consolidated detailed summary. 
-    Helpful Answer:"""
-    reduce_prompt = PromptTemplate.from_template(reduce_template)
+        # final_summary = stuff_chain.run(docs)
+        # return final_summary
+        reduce_template = """The following is set of summaries:
+        {docs}
+        Take these and distill it into a final, consolidated detailed summary.
+        Helpful Answer:"""
+        reduce_prompt = PromptTemplate.from_template(reduce_template)
 
-    # Run chain
-    reduce_chain = LLMChain(llm=llm, prompt=reduce_prompt)
+        # Run chain
+        reduce_chain = LLMChain(llm=llm, prompt=reduce_prompt)
 
-    # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
-    combine_documents_chain = StuffDocumentsChain(
-        llm_chain=reduce_chain, document_variable_name="docs"
-    )
+        # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
+        combine_documents_chain = StuffDocumentsChain(
+            llm_chain=reduce_chain, document_variable_name="docs"
+        )
 
-    # Combines and iteratively reduces the mapped documents
-    reduce_documents_chain = ReduceDocumentsChain(
-        # This is final chain that is called.
-        combine_documents_chain=combine_documents_chain,
-        # If documents exceed context for `StuffDocumentsChain`
-        collapse_documents_chain=combine_documents_chain,
-        # The maximum number of tokens to group documents into.
-        token_max=4000,
-    )
+        # Combines and iteratively reduces the mapped documents
+        reduce_documents_chain = ReduceDocumentsChain(
+            # This is final chain that is called.
+            combine_documents_chain=combine_documents_chain,
+            # If documents exceed context for `StuffDocumentsChain`
+            collapse_documents_chain=combine_documents_chain,
+            # The maximum number of tokens to group documents into.
+            token_max=4000,
+        )
 
-    # Combining documents by mapping a chain over them, then combining results
-    map_reduce_chain = MapReduceDocumentsChain(
-        # Map chain
-        llm_chain=map_chain,
-        # Reduce chain
-        reduce_documents_chain=reduce_documents_chain,
-        # The variable name in the llm_chain to put the documents in
-        document_variable_name="docs",
-        # Return the results of the map steps in the output
-        return_intermediate_steps=False,
-    )
+        # Combining documents by mapping a chain over them, then combining results
+        map_reduce_chain = MapReduceDocumentsChain(
+            # Map chain
+            llm_chain=map_chain,
+            # Reduce chain
+            reduce_documents_chain=reduce_documents_chain,
+            # The variable name in the llm_chain to put the documents in
+            document_variable_name="docs",
+            # Return the results of the map steps in the output
+            return_intermediate_steps=False,
+        )
 
-    text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
-        chunk_size=4096, chunk_overlap=0
-    )
-    split_docs = text_splitter.split_documents(docs)
-
-    return map_reduce_chain.run(split_docs)
+        text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
+            chunk_size=4096, chunk_overlap=0
+        )
+        split_docs = text_splitter.split_documents(docs)
+    #return map_reduce_chain.run(split_docs)
+    return map_chain.run(docs)
 
 def answer_question_video(docs, question):
     """
@@ -158,7 +169,12 @@ def answer_question_video(docs, question):
 
     retriever = vectorstore.as_retriever()
     prompt = hub.pull("rlm/rag-prompt")
-    llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
+    #llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
+    llm = CTransformers(model="TheBloke/Mistral-7B-Instruct-v0.1-GGUF",
+                        #model_file="mistral-7b-instruct-v0.1.Q4_K_M.gguf",
+                        model_file="mistral-7b-instruct-v0.1.Q2_K.gguf",
+                        config={'max_new_tokens': 4096, 'temperature': 0.7, 'context_length': 4096},
+                        threads=os.cpu_count())
 
     def format_docs(docs):
         return "\n\n".join(doc.page_content for doc in docs)
