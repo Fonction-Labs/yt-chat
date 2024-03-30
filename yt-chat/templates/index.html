@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Video Summarizer</title>
     <style>
+        #summary-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
         #chat-container {
             max-width: 600px;
             margin: 20px auto;
@@ -30,19 +37,25 @@
     </style>
 </head>
 <body>
+    <div id="summary-container">
+
+    <center>
     <h1>YouTube Video Summarizer</h1>
-    <form method="post">
+    <form method="post" action="/summarize">
         <label for="video_url">Enter YouTube Video URL:</label>
         <input type="text" id="video_url" name="video_url" required>
         <button type="submit">Summarize</button>
     </form>
+    </center>
 
     {% if video_url %}
-        <h2>Video URL: {{ video_url }}</h2>
+    <h3>Video URL</h3>
+    <p><a href={{ video_url }} target="_blank">{{ video_url }}</a></p>
         {% if summary %}
-            <h3>Summary:</h3>
-            <p>{{ summary }}</p>
+            <h3>Summary</h3>
+            <p>{{ summary | safe }}</p>
         {% endif %}
+    </div>
 
         <div id="chat-container">
             <div id="messages-container"></div>
