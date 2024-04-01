@@ -13,6 +13,9 @@ langchain = "^0.1.4"
 langchain-openai = "^0.0.5"
 langchainhub = "^0.1.14"
 chromadb = "^0.4.22"
+openai = "^1.14.3"
+fastapi = "^0.110.0"
+python-multipart = "^0.0.9"
 
 
 [build-system]

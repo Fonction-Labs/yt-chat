@@ -1,5 +1,5 @@
 from langchain_openai import ChatOpenAI
-from llama_cpp import Llama
+# from llama_cpp import Llama
 from langchain_community.llms import CTransformers
 
 
