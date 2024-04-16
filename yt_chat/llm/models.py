@@ -42,4 +42,4 @@ class OllamaLLM:
 
     def predict_messages(self, messages: list[dict[str, str]], temperature: float):
         warn("Unfortunately, ollama does not handle changing dynamically parameters like temperature (llamma.cpp does.")
-        return ollama.chat(model=self.model_name, messages=messages)["response"]["message"]["content"]
+        return ollama.chat(model=self.model_name, messages=messages)["message"]["content"]
