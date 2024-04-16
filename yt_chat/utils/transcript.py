@@ -1,7 +1,6 @@
 from functools import reduce
 from youtube_transcript_api import YouTubeTranscriptApi
 
-# @cache
 def get_video_transcript(video_url):
     """
     Get the transcript of a YouTube video.
