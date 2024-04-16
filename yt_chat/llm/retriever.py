@@ -11,7 +11,7 @@ def retriever(docs, question, n: int = 4):
     doc_embeddings = Parallel(n_jobs=8, prefer="threads")(delayed(get_embedding)(doc) for doc in docs)
     question_embedding = get_embedding(question)
     similarities = map(partial(cosine_similarity, question_embedding), doc_embeddings)
-    return [x for x, _ in sorted(zip(docs, similarities))][:n]
+    return [x for x, _ in sorted(zip(docs, similarities))][::-1][:n]
 
 def get_embedding(text, model="text-embedding-3-small"):
    text = text.replace("\n", " ")
