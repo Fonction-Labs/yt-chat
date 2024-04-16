@@ -3,29 +3,9 @@ from functools import partial
 from joblib import Parallel, delayed
 
 from ..utils.chunk_text import get_text_chunks
+from ..utils.tqdm_joblib import tqdm_joblib
 
 from ..settings  import MODEL_TO_GENERATE_SUMMARIZE_TRANSCRIPT_MESSAGES_FUNC, MODEL_TO_GENERATE_SUMMARIZE_SUMMARIES_MESSAGES_FUNC
-
-import contextlib
-import joblib
-from tqdm import tqdm
-
-# https://stackoverflow.com/questions/24983493/tracking-progress-of-joblib-parallel-execution
-@contextlib.contextmanager
-def tqdm_joblib(tqdm_object):
-    """Context manager to patch joblib to report into tqdm progress bar given as argument"""
-    class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
-        def __call__(self, *args, **kwargs):
-            tqdm_object.update(n=self.batch_size)
-            return super().__call__(*args, **kwargs)
-
-    old_batch_callback = joblib.parallel.BatchCompletionCallBack
-    joblib.parallel.BatchCompletionCallBack = TqdmBatchCompletionCallback
-    try:
-        yield tqdm_object
-    finally:
-        joblib.parallel.BatchCompletionCallBack = old_batch_callback
-        tqdm_object.close()
 
 def summarize_transcript(
     model,
@@ -53,9 +33,8 @@ def summarize_transcript(
 
         summaries = [summarize_func(messages) for messages in tqdm(list_messages)]
 
-        #with tqdm_joblib(tqdm(desc="Summarization...", total=10)) as progress_bar:
-        #    summaries =Parallel(n_jobs=8, prefer="threads")(delayed(summarize_func)(messages) for messages in list_messages)
-        #summaries = Parallel(n_jobs=8, prefer="threads")(delayed(summarize_func)(messages) for messages in tqdm(list_messages))
+        with tqdm_joblib(tqdm(desc="Summarization...", total=10)) as progress_bar:
+            summaries = Parallel(n_jobs=8, prefer="threads")(delayed(summarize_func)(messages) for messages in list_messages)
         print(summaries)
 
         # Combine summaries into one string
