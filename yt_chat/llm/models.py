@@ -16,7 +16,7 @@ class OpenAILLM:
         return self.client.embeddings.create(input=[prompt], model=self.embedding_model_name).data[0].embedding
 
     def predict(self, prompt: str, temperature: float):
-        return predict_messages(messages=[{"role": "user", "content": prompt}], temperature=temperature)
+        return self.predict_messages(messages=[{"role": "user", "content": prompt}], temperature=temperature)
 
     # TODO: fix
     #@retry(wait=wait_exponential(multiplier=1, min=2, max=6))
@@ -38,7 +38,7 @@ class OllamaLLM:
 
     def predict(self, prompt: str, temperature: float):
         ollama.pull(self.model_name)
-        return predict_messages(messages=[{"role": "user", "content": prompt}], temperature=temperature)
+        return self.predict_messages(messages=[{"role": "user", "content": prompt}], temperature=temperature)
 
     def predict_messages(self, messages: list[dict[str, str]], temperature: float):
         warn("Unfortunately, ollama does not handle changing dynamically parameters like temperature (llamma.cpp does.")
