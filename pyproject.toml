@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "yt-chat"
+name = "yt_chat"
 version = "0.1.0"
 description = "A Flask application for summarizing YouTube videos and chatting with a bot."
 authors = ["mcordier <matt.cordier@icloud.com>"]
@@ -9,9 +9,6 @@ readme = "README.md"
 python = "^3.9"
 Flask = "^3.0.1"
 youtube-transcript-api = "^0.6.2"
-langchain = "^0.1.4"
-langchain-openai = "^0.0.5"
-langchainhub = "^0.1.14"
 chromadb = "^0.4.22"
 openai = "^1.14.3"
 fastapi = "^0.110.0"
