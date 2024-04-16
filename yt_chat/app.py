@@ -66,7 +66,7 @@ def get_app(model_name):
         
         chat_history[video_url].append({"role": "user", "content": user_message})
         transcript_text = get_video_transcript(video_url)
-        docs = get_text_chunks(transcript_text)
+        docs = get_text_chunks(transcript_text, int(agent_settings.token_context_size * agent_settings.safety_token_prct), int(agent_settings.token_context_size * 0.1))
         bot_response = answer_question_video(docs, user_message, n=agent_settings.n_vectors)
         chat_history[video_url].append({"role": "bot", "content": bot_response})
         return {"bot_response": bot_response, "chat_history": chat_history[video_url]}

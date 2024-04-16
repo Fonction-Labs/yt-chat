@@ -30,7 +30,7 @@ def summarize_transcript(
     i = 0
     total_summary = transcript_text
     while (i == 0 or len(total_summary) > agent_settings.token_context_size * 4 * agent_settings.safety_token_prct):
-        transcripts = get_text_chunks(total_summary)
+        transcripts = get_text_chunks(total_summary, int(agent_settings.token_context_size * agent_settings.safety_token_prct), int(agent_settings.token_context_size * 0.1))
         print(f"Split all transcript summaries into {len(transcripts)}")
         sumup_func = partial(summarize_document, llm=llm, prompt_template=agent_settings.summarize_transcript_template)
         summaries = Parallel(n_jobs=8, prefer="threads")(delayed(sumup_func)(i) for i in tqdm(transcripts))

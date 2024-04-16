@@ -1,4 +1,4 @@
-def get_text_chunks(text: str, chunk_size: int = 2000, chunk_overlap: int = 200) -> str:
+def get_text_chunks(text: str, chunk_size: int, chunk_overlap: int) -> str:
     """
     Split text into chunks for processing.
 

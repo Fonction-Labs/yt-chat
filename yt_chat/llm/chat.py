@@ -2,11 +2,11 @@ from functools import partial
 import numpy as np
 from tenacity import retry, wait_exponential
 
-from .retriever import retriever
+from .retriever import retrieve_chunks
 from .openai import client
 
 def answer_question_video(docs, question, n=4):
-    context = " ".join(retriever(docs, question, n))
+    context = " ".join(retrieve_chunks(docs, question, n))
     answer = answer_question(question, context)
     return answer
 
