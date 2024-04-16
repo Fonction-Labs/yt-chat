@@ -10,7 +10,7 @@ from yt_chat.llm.summarize import summarize_transcript
 from yt_chat.llm.retriever import retrieve_top_k_chunks_for_query
 from yt_chat.utils.transcript import get_video_transcript
 from yt_chat.utils.chunk_text import get_text_chunks
-from yt_chat.settings import MODELS, MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE
+from yt_chat.settings import MODELS, MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE, MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC
 
 class ChunkSettings:
     def __init__(self, model):
@@ -53,11 +53,12 @@ def get_app(model_name):
             raise HTTPException(status_code=404, detail="Video chat history not found")
 
         chat_history[video_url].append({"role": "user", "content": user_message})
-        transcript_text = get_video_transcript(video_url)
-        chunks = get_text_chunks(transcript_text, chunk_settings.chunk_size, chunk_settings.chunk_overlap)
+        transcript = get_video_transcript(video_url)
+        chunks = get_text_chunks(transcript, chunk_settings.chunk_size, chunk_settings.chunk_overlap)
+        query = user_message # TODO: query should be hypothetical answer rather than question
         context = " ".join(retrieve_top_k_chunks_for_query(model, query, chunks, top_k=5))
-        messages_with_context = GENERATE_CONTEXT_MESSAGES_FUNC[model.model_name](query=user_message, context=context)
-        bot_answer = model.predict_messages(messages_with_context, temperature=0.)
+        messages_with_context = MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC[model.model_name](query, context=context)
+        bot_response = model.predict_messages(messages_with_context, temperature=0.)
         chat_history[video_url].append({"role": "bot", "content": bot_answer})
         return {"bot_response": bot_response, "chat_history": chat_history[video_url]}
     return app
