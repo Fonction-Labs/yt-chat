@@ -45,29 +45,29 @@ def generate_mistral_context_message(question, context):
 
 # ------ YOUTUBE SUMMARIES MESSAGES ------
 def generate_openai_summarize_transcript_message(transcript: str):
-    return {
+    return [{
         "role": "user",
         "content": f"""
             Write a detailed summary of the following youtube video transcript.
                 "{transcript}".
             CONCISE SUMMARY:
             """,
-    }
+    }]
 
 
 def generate_mistral_summarize_transcript_message(transcript: str):
-    return {
+    return [{
         "role": "user",
         "content": f"""
             I want you to write a concise summary of an extract of a youtube video transcript. Do NOT mention things you are not sure or do not know. If you don't know or lack context, do not make up things. Only use information provided by the transcript to write your concise summary.
             TRANSCRIPT: "{transcript}".
             ### CONCISE SUMMARY:
             """,
-    }
+    }]
 
 
 def generate_openai_summarize_summaries_message(summaries: str):
-    return {
+    return [{
         "role": "user",
         "content": f"""
             The following is set of summaries:
@@ -75,18 +75,18 @@ def generate_openai_summarize_summaries_message(summaries: str):
             Take these and distill it into a final, consolidated detailed summary of 3 to 5 paragraphs with some subtitles for each paragraph (with markdown format).
             Helpful Answer:
             """,
-    }
+    }]
 
 
 def generate_mistral_summarize_summaries_message(summaries: str):
-    return {
+    return [{
         "role": "user",
         "content": f"""
             The following will be a set of summaries from a transcript. Take these and distill it into a final, consolidated summary of the main points. Construct it as a well organized summary of the main points and should be between 3 and 5 paragraphs.
             SUMMARIES: "{summaries}".
             ### DISTILLED ANSWER:
             """,
-    }
+    }]
 
 MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC = {
     "gpt-3.5-turbo": generate_openai_context_message,
