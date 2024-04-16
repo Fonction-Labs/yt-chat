@@ -54,9 +54,7 @@ def get_app(model_name):
         summary = summarize_transcript(
             transcript_text,
             llm=llm,
-            base_prompt_transcript_summary=agent_settings.base_prompt_transcript_summary,
-            model_tokens_ctx=agent_settings.token_context_size,
-            safety_token_prct=agent_settings.safety_token_prct
+            agent_settings=agent_settings
         )
         chat_history[video_url] = []  # Initialize chat history for the video
         return templates.TemplateResponse("index.html", {"request": request, "video_url": video_url, "summary": summary, "chat_history": chat_history.get(video_url, [])})

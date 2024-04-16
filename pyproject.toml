@@ -16,6 +16,7 @@ chromadb = "^0.4.22"
 openai = "^1.14.3"
 fastapi = "^0.110.0"
 python-multipart = "^0.0.9"
+joblib = "^1.4.0"
 
 
 [build-system]
