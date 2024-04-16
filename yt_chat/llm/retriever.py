@@ -5,7 +5,7 @@ from joblib import Parallel, delayed
 from .openai import client
 
 def cosine_similarity(emb_1, embd_2):
-    return 1 - np.dot(emb_1, embd_2) / (np.linalg.norm(emb_1) * np.linalg.norm(embd_2))
+    return np.dot(emb_1, embd_2) / (np.linalg.norm(emb_1) * np.linalg.norm(embd_2))
 
 def retriever(docs, question, n: int = 4):
     doc_embeddings = Parallel(n_jobs=8, prefer="threads")(delayed(get_embedding)(doc) for doc in docs)
