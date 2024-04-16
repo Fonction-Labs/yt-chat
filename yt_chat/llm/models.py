@@ -13,7 +13,7 @@ class OpenAILLM:
         self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
     def embed(self, prompt: str):
-        return self.client.embeddings.create(input=[prompt], model=embedding_model_name).data[0].embedding
+        return self.client.embeddings.create(input=[prompt], model=self.embedding_model_name).data[0].embedding
 
     def predict(self, prompt: str, temperature: float):
         return predict_messages(messages=[{"role": "user", "content": prompt}], temperature=temperature)

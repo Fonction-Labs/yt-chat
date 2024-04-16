@@ -59,7 +59,7 @@ def get_app(model_name):
         context = " ".join(retrieve_top_k_chunks_for_query(model, query, chunks, top_k=5))
         messages_with_context = MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC[model.model_name](query, context=context)
         bot_response = model.predict_messages(messages_with_context, temperature=0.)
-        chat_history[video_url].append({"role": "bot", "content": bot_answer})
+        chat_history[video_url].append({"role": "bot", "content": bot_response})
         return {"bot_response": bot_response, "chat_history": chat_history[video_url]}
     return app
 
