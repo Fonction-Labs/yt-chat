@@ -1,13 +1,10 @@
 import uuid
 
-from joblib import Parallel, delayed
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import PointStruct
 
 def embed_and_store_chunks(model, chunks: list[str], qdrant_client: QdrantClient, collection_name: str) -> None:
-    embeddings = Parallel(n_jobs=8, prefer="threads")(
-        delayed(model.embed)(chunk) for chunk in chunks
-    )
+    embeddings = model.embed_batch_parallel(chunks)
     # Store embedded chunks
     qdrant_client.upsert(
         collection_name,

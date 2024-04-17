@@ -31,20 +31,20 @@ async def main():
 
 
 async def chainlit_summarize_video(model, chunk_settings, qdrant_client):
-    response = await cl.AskUserMessage(content="Please specify the youtube URL you want to summarize.").send()
+    response = await cl.AskUserMessage(content="Please specify the Youtube URL you want to summarize.").send()
 
     if response:
         video_url = response["output"]
         if is_valid_youtube_url(video_url):
             summary = get_summary(video_url, model, chunk_settings, qdrant_client)
             await cl.Message(
-                content=f"Here is the summary of the youtube video: \n {summary}",
+                content=f"Here is the summary of the Youtube video: \n {summary}",
             ).send()
 
             await chainlit_ask_if_new_video(model, chunk_settings, qdrant_client)
         else:
             await cl.Message(
-                content="You did not provide a valid youtube URL",
+                content="You did not provide a valid Youtube URL",
             ).send()
             await chainlit_summarize_video(model, chunk_settings, qdrant_client)
 
@@ -92,12 +92,12 @@ async def chat_profile():
         cl.ChatProfile(
             name="ChatGPT (3.5)",
             markdown_description="The underlying LLM model is **GPT-3.5**.",
-            icon="https://picsum.photos/200",
+            icon="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png",
         ),
         cl.ChatProfile(
             name="Mistral (7B)",
             markdown_description="The underlying LLM model is **Mistral**.",
-            icon="https://picsum.photos/250",
+            icon="https://cdn.jaimelesstartups.fr/wp-content/uploads/2024/02/announcing-mistral.png",
         ),
     ]
 

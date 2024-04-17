@@ -1,9 +1,7 @@
 from tqdm import tqdm
 from functools import partial
-from joblib import Parallel, delayed
 
 from ..utils.chunk_text import get_text_chunks
-from ..utils.tqdm_joblib import tqdm_joblib
 
 from ..settings  import MODEL_TO_GENERATE_SUMMARIZE_TRANSCRIPT_MESSAGES_FUNC, MODEL_TO_GENERATE_SUMMARIZE_SUMMARIES_MESSAGES_FUNC
 
@@ -29,11 +27,7 @@ def summarize_transcript(
         # (the output is [messages1, messages2, ...])
         list_messages = [generate_summarize_transcript_messages_func(transcript) for transcript in transcripts]
         # Summarize with the model and generated message
-        summarize_func = partial(model.predict_messages, temperature=0.)
-
-        with tqdm_joblib(tqdm(desc="Summarization...", total=len(list_messages))) as progress_bar:
-            summaries = Parallel(n_jobs=8, prefer="threads")(delayed(summarize_func)(messages) for messages in list_messages)
-
+        summaries = model.predict_messages_batch_parallel(list_messages, temperature=0.)
         # Combine summaries into one string
         total_summary = " ".join(summaries)
     # Summarize the final summary
