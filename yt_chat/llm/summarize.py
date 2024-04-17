@@ -31,9 +31,7 @@ def summarize_transcript(
         # Summarize with the model and generated message
         summarize_func = partial(model.predict_messages, temperature=0.)
 
-        summaries = [summarize_func(messages) for messages in tqdm(list_messages)]
-
-        with tqdm_joblib(tqdm(desc="Summarization...", total=10)) as progress_bar:
+        with tqdm_joblib(tqdm(desc="Summarization...", total=len(list_messages))) as progress_bar:
             summaries = Parallel(n_jobs=8, prefer="threads")(delayed(summarize_func)(messages) for messages in list_messages)
         print(summaries)
 
