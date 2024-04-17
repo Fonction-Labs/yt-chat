@@ -7,17 +7,13 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-Flask = "^3.0.1"
 youtube-transcript-api = "^0.6.2"
-chromadb = "^0.4.22"
 openai = "^1.14.3"
-fastapi = "^0.110.0"
-python-multipart = "^0.0.9"
 joblib = "^1.4.0"
 ollama = "^0.1.8"
 qdrant-client = "^1.8.2"
-uvicorn = "^0.29.0"
-
+chainlit = "^1.0.504"
+tenacity = "^8.2.3"
 
 [build-system]
 requires = ["poetry-core"]
