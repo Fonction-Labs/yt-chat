@@ -10,7 +10,7 @@ MODELS = {
 }
 
 MODEL_TO_EMBEDDING_VECTOR_SIZE = {"gpt-3.5-turbo": 1536, # small embedding
-                                  "mistral": 1024,
+                                  "mistral": 4096,
                                   }
 
 MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE = {

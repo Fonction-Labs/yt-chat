@@ -1,5 +1,6 @@
 import re
 import chainlit as cl
+from qdrant_client import QdrantClient
 
 from yt_chat.llm.summarize import summarize_transcript
 from yt_chat.utils.transcript import get_video_transcript
@@ -25,8 +26,8 @@ CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT (3.5)": "gpt-3.5-turbo",
 
 @cl.on_chat_start
 async def main():
-    model, chunk_settings, _ = set_internal_state()
-    await chainlit_summarize_video(model, chunk_settings)
+    model, chunk_settings, qdrant_client = set_internal_state()
+    await chainlit_summarize_video(model, chunk_settings, qdrant_client)
 
 
 async def chainlit_summarize_video(model, chunk_settings, qdrant_client):
@@ -40,7 +41,7 @@ async def chainlit_summarize_video(model, chunk_settings, qdrant_client):
                 content=f"Here is the summary of the youtube video: \n {summary}",
             ).send()
 
-            await chainlit_ask_if_new_video()
+            await chainlit_ask_if_new_video(model, chunk_settings, qdrant_client)
         else:
             await cl.Message(
                 content="You did not provide a valid youtube URL",
@@ -108,7 +109,7 @@ def get_summary(video_url: str, model: str, chunk_settings: ChunkSettings, qdran
         transcript, chunk_settings.chunk_size, chunk_settings.chunk_overlap
     )
     # Embed and store chunks
-    embed_and_store_chunks(model, chunks, qdrant_client, collection_name)
+    embed_and_store_chunks(model, chunks, qdrant_client, collection_name=QDRANT_COLLECTION_NAME)
     # Chunk transcript and summarize
     # TODO: have summarize_transcript take only chunks and only summarize
     return summarize_transcript(
@@ -120,9 +121,8 @@ def get_summary(video_url: str, model: str, chunk_settings: ChunkSettings, qdran
 
 def get_bot_response(query: str, model, qdrant_client: QdrantClient):
     # Retrieve top_k chunks for query
-    query = user_message
     top_k_chunks_for_query = retrieve_top_k_chunks_for_query(
-        model, query, qdrant_client, collection_name, top_k=5
+        model, query, qdrant_client, collection_name=QDRANT_COLLECTION_NAME, top_k=5
     )
     # Merge top_k chunks into a single string for context
     context = " ".join(top_k_chunks_for_query)
@@ -156,7 +156,7 @@ def get_chunk_settings() -> ChunkSettings:
 
 def set_qdrant_client(model_name: str) -> QdrantClient:
     qdrant_client = create_qdrant_collection(collection_name=QDRANT_COLLECTION_NAME,
-                                             embedding_vector_size=MODEL_TO_EMBEDDING_VECTOR_SIZE[model_name]))
+                                             embedding_vector_size=MODEL_TO_EMBEDDING_VECTOR_SIZE[model_name])
     cl.user_session.set("qdrant_client", qdrant_client)
     return qdrant_client
 
