@@ -33,10 +33,9 @@ def summarize_transcript(
 
         with tqdm_joblib(tqdm(desc="Summarization...", total=len(list_messages))) as progress_bar:
             summaries = Parallel(n_jobs=8, prefer="threads")(delayed(summarize_func)(messages) for messages in list_messages)
-        print(summaries)
 
         # Combine summaries into one string
         total_summary = " ".join(summaries)
     # Summarize the final summary
     messages = generate_summarize_summaries_messages_func(total_summary)
-    return model.predict_messages(messages=messages, temperature=0.).replace("\n", "<br>") # Hack for proper browser display
+    return model.predict_messages(messages=messages, temperature=0.)
