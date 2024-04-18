@@ -43,7 +43,7 @@ latex = false
 
 [UI]
 # Name of the app and chatbot.
-name = "Chatbot"
+name = "yt-chat"
 
 # Show the readme while the thread is empty.
 show_readme_as_default = true
@@ -88,8 +88,11 @@ hide_cot = false
 
     [UI.theme.light.primary]
         #main = "#F80061"
+        main = "#103052"
         #dark = "#980039"
+        dark = "#103052"
         #light = "#FFE7EB"
+        light = "#f5f7fa"
 
 # Override default MUI dark theme. (Check theme.ts)
 [UI.theme.dark]
