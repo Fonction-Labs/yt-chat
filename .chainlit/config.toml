@@ -4,7 +4,7 @@ enable_telemetry = true
 
 
 # List of environment variables to be provided by each user to use the app.
-user_env = []
+user_env = ["OPENAI_API_KEY"]
 
 # Duration (in seconds) during which the session is saved when the connection is lost
 session_timeout = 3600

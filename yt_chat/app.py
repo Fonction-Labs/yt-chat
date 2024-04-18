@@ -1,3 +1,4 @@
+import os
 import chainlit as cl
 from chainlit import make_async
 from typing import Optional
@@ -9,11 +10,17 @@ from yt_chat.utils.transcript import get_video_transcript
 from yt_chat.llm.summarize import summarize_transcript
 from yt_chat.llm.answer import embed_and_store_text, answer_query
 
+from yt_chat.config import Config
+
 # TODO: use hypothetical answer
 # TODO (optional): use automatic rephrasing of query (perf / quality)
 # TODO: use chat history as context
 
 # TODO: send chat message if youtube transcript does not exist for video
+# TODO: handle error (send chat message) if rate limit or connection error on OpenAI
+
+# TODO: tests
+# TODO: docker
 
 # ------ CHAINLIT CHAT PROFILES AND INTERNAL STATE ------
 
@@ -21,9 +28,11 @@ CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "chat-gpt", "Mistral": "mistral"}
 
 def set_internal_state() -> InternalState:
     chat_profile = cl.user_session.get("chat_profile")
+    api_key = cl.user_session.get("env")["OPENAI_API_KEY"]
+
     model_name = CHAT_PROFILE_TO_MODEL_NAME.get(chat_profile)
     if model_name:
-        internal_state = InternalState(model_name)
+        internal_state = InternalState(model_name, api_key)
         cl.user_session.set("internal_state", internal_state)
         return internal_state
     else:
@@ -48,7 +57,6 @@ async def chat_profile():
             icon="https://cdn.jaimelesstartups.fr/wp-content/uploads/2024/02/announcing-mistral.png",
         ),
     ]
-
 
 # ------------
 

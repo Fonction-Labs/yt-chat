@@ -1,4 +1,3 @@
-import os
 from warnings import warn
 
 import ollama
@@ -8,29 +7,28 @@ from tenacity import retry, wait_exponential
 from yt_chat.utils.parallel import parallel
 from tqdm import tqdm
 
-from yt_chat.config_models import ConfigModels
+from yt_chat.config import Config
 
 class BaseLLM:
-    def __init__(self, model_ref_name: str):
-        self.model_ref_name = model_ref_name
-
-        self.embedding_model_name = ConfigModels.MODEL_TO_EMBEDDING_MODEL_NAME.get(model_ref_name)
-        self.embedding_vector_size = ConfigModels.MODEL_TO_EMBEDDING_VECTOR_SIZE.get(model_ref_name)
-        self.context_window_token_size = ConfigModels.MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE.get(model_ref_name)
-        self.generate_context_messages_func = ConfigModels.MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC.get(model_ref_name)
+    def __init__(self, model_name: str):
+        self.model_ref_name = Config.MODEL_TO_MODEL_REF_NAME[model_name]
+        self.embedding_model_name = Config.MODEL_TO_EMBEDDING_MODEL_NAME.get(model_name)
+        self.embedding_vector_size = Config.MODEL_TO_EMBEDDING_VECTOR_SIZE.get(model_name)
+        self.context_window_token_size = Config.MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE.get(model_name)
+        self.generate_context_messages_func = Config.MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC.get(model_name)
 
         # Specific to yt-chat below
         self.generate_summarize_transcript_messages_func = (
-            ConfigModels.MODEL_TO_GENERATE_SUMMARIZE_TRANSCRIPT_MESSAGES_FUNC.get(model_ref_name)
+            Config.MODEL_TO_GENERATE_SUMMARIZE_TRANSCRIPT_MESSAGES_FUNC.get(model_name)
         )
         self.generate_summarize_summaries_messages_func = (
-            ConfigModels.MODEL_TO_GENERATE_SUMMARIZE_SUMMARIES_MESSAGES_FUNC.get(model_ref_name)
+            Config.MODEL_TO_GENERATE_SUMMARIZE_SUMMARIES_MESSAGES_FUNC.get(model_name)
         )
 
 class OpenAILLM(BaseLLM):
-    def __init__(self, model_ref_name: str):
-        super().__init__(model_ref_name)
-        self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    def __init__(self, model_name: str, api_key: str):
+        super().__init__(model_name)
+        self.client = OpenAI(api_key=api_key)
 
     def embed(self, prompt: str):
         return self.client.embeddings.create(input=[prompt], model=self.embedding_model_name).data[0].embedding
@@ -71,8 +69,9 @@ class OpenAILLM(BaseLLM):
 
 class OllamaLLM(BaseLLM):
     # TODO: VLLM for when deploying at-scale
-    def __init__(self, model_ref_name: str):
-        super().__init__(model_ref_name)
+    def __init__(self, model_name: str, api_key: str):
+        # Note: API key is unused for local models
+        super().__init__(model_name)
 
     def embed(self, prompt: str):
         ollama.pull(self.model_ref_name)

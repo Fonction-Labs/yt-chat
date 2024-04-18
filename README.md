@@ -13,11 +13,6 @@
 ---
 
 <div align="center">
-</div>
-
----
-
-<div align="center">
 <!-- <img alt="All workflows" src="https://github.com/Fonction-Labs/jade/actions/workflows/all.yml/badge.svg"/> -->
 
 <a href="https://github.com/Fonction-Labs/jade/actions/workflows/all.yml?query=branch%3Amain">
@@ -33,35 +28,41 @@ Installation
 ------------
 ```
 poetry install
+```
+
+To run `yt-chat`, simply do:
+```
 poetry run python yt-chat/app.py
 ```
 
-### If you wish to use `gpt-3.5` (with your OpenAI API key):
-```
-export OPENAI_API_KEY='<MY-OPENAI-API-KEY>'
-```
+If you don't want to bother, you can also use try the online version (only handles OpenAI).
 
-Don't forget to set `MODEL_CHOICE` in `app.py` to `"GPT"`.
 
-### If you wish to use `mistral-7b` (local model):
+Using Chat-GPT 3.5
+------------
+This is if you wish to use an `OpenAI` model, for example `gpt-3.5`.
 
-1. Install Python for ARM64
-```
-wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh
-bash Miniforge3-MacOSX-arm64.sh
-```
+You will need your OpenAI API key, which you can get from <a href="https://platform.openai.com/api-keys">here</a>.
 
-2. Download the GGUF-format `mistral-7b-instruct-v0.2.Q5_K_S.gguf` weights from [here](https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF) and move them to the root of this repository.
+Once you've input your OpenAI API key, select the `Chat-GPT` chat profile in the UI.
 
-3. Use this ARM64 version of Python for the poetry environment associated to this project
-```
-poetry env use /PATH/TO/MINIFORGE3/miniforge3/bin/python3
-poetry install
-```
 
-4. Install `llama-cpp-python` (with Metal support if you are using an Apple Silicon Mac)
-```
-CMAKE_ARGS="-DLLAMA_METAL=on" poetry run python -m pip install -U llama-cpp-python --no-cache-dir
-```
+Using Mistral-7B
+------------
+This is if you wish to use a local `ollama` model, for example `mistral-7b`.
 
-Don't forget to set `MODEL_CHOICE` in `app.py` to `"MISTRAL"`.
+You will need to install <a href="https://ollama.com/">ollama</a> on your machine.
+
+When running `yt-chat` for the first time, you will asked for an OpenAI API key. This is irrelevant for local models. Enter anything to continue.
+
+Then, simply select the `Mistral` chat profile in the UI.
+
+
+Customizing with your own models
+------------
+If you wish to use `yt-chat` with other models than `gpt-3.5` or `mistral-7b`, check out this <a href="">tutorial</a>.
+
+
+Thanks
+------------
+**yt-chat** is powered by <a href="https://github.com/Chainlit/chainlit">chainlit</a> and <a href="https://github.com/ollama/ollama-python">ollama</a>.
