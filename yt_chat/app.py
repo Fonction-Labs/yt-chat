@@ -13,10 +13,12 @@ from yt_chat.llm.answer import embed_and_store_text, answer_query
 # TODO (optional): use automatic rephrasing of query (perf / quality)
 # TODO: use chat history as context
 
+# TODO: send chat message if youtube transcript does not exist for video
+
 # ------ CHAINLIT CHAT PROFILES AND INTERNAL STATE ------
 
-CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "gpt-3.5-turbo",
-                              "Mistral": "mistral"}
+CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "gpt-3.5-turbo", "Mistral": "mistral"}
+
 
 def set_internal_state() -> InternalState:
     chat_profile = cl.user_session.get("chat_profile")
@@ -28,8 +30,10 @@ def set_internal_state() -> InternalState:
     else:
         raise ValueError("Unknown chat profile or model name")
 
+
 def get_internal_state() -> Optional[InternalState]:
     return cl.user_session.get("internal_state")
+
 
 @cl.set_chat_profiles
 async def chat_profile():
@@ -46,9 +50,11 @@ async def chat_profile():
         ),
     ]
 
+
 # ------------
 
 # ------ CHAINLIT PROCESSES ------
+
 
 @cl.on_chat_start
 async def main():
@@ -58,8 +64,11 @@ async def main():
     internal_state = set_internal_state()
     await chainlit_summarize_video(internal_state)
 
+
 async def chainlit_summarize_video(internal_state):
-    response = await cl.AskUserMessage(content="Please specify the YouTube URL you want to summarize.").send()
+    response = await cl.AskUserMessage(
+        content="Please specify the YouTube URL you want to summarize."
+    ).send()
 
     if response and is_valid_youtube_url(response["output"]):
         video_url = response["output"]
@@ -71,24 +80,38 @@ async def chainlit_summarize_video(internal_state):
         await output_message.send()
 
         # Summarize transcript
-        summary = await make_async(summarize_transcript)(transcript, internal_state.model, internal_state.chunk_settings)
+        summary = await make_async(summarize_transcript)(
+            transcript, internal_state.model, internal_state.chunk_settings
+        )
 
         output_message.content = f"Here is the summary of the YouTube video:\n{summary}"
         await output_message.update()
 
         # Compute and store embeddings for later chatting
-        await make_async(embed_and_store_text)(transcript, internal_state.model, internal_state.chunk_settings, internal_state.qdrant_client)
+        await make_async(embed_and_store_text)(
+            transcript,
+            internal_state.model,
+            internal_state.chunk_settings,
+            internal_state.qdrant_client,
+        )
         await chainlit_ask_if_new_video(internal_state)
     else:
         await cl.Message(content="You did not provide a valid YouTube URL.").send()
         await chainlit_summarize_video(internal_state)
 
+
 async def chainlit_ask_if_new_video(internal_state):
     action = await cl.AskActionMessage(
         content="Do you want to summarize a new video?",
         actions=[
-            cl.Action(name="New video?", value="new_video", label="🔁 Yes, summarize new video"),
-            cl.Action(name="Continue chatting", value="continue", label="➡️  No, continue chatting"),
+            cl.Action(
+                name="New video?", value="new_video", label="🔁 Yes, summarize new video"
+            ),
+            cl.Action(
+                name="Continue chatting",
+                value="continue",
+                label="➡️  No, continue chatting",
+            ),
         ],
     ).send()
 
@@ -115,8 +138,10 @@ async def on_message(message: cl.Message):
     await output.update()
     await chainlit_ask_if_new_video(internal_state)
 
+
 @cl.on_settings_update
 async def setup_agent(settings):
     print("on_settings_update", settings)
+
 
 # ------------

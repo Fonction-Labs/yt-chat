@@ -8,7 +8,7 @@ class ChunkSettings(BaseModel):
     @property
     def chunk_size(self):
         return int(self.token_context_size * self.characters_per_token * self.safety_percentage)
-    
+
     @property
     def chunk_overlap(self):
         return int(self.chunk_size * 0.1)

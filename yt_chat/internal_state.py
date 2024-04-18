@@ -5,21 +5,15 @@ from yt_chat.utils.chunk_text import ChunkSettings
 
 from yt_chat.utils.qdrant import create_qdrant_collection
 
-from yt_chat.settings import (
-    QDRANT_COLLECTION_NAME,
-    MODELS,
-    MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE,
-    MODEL_TO_EMBEDDING_VECTOR_SIZE,
-    MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC,
-)
+from yt_chat.config import Config
 
 class InternalState:
     def __init__(self, model_name: str):
-        self._model = MODELS[model_name]
-        self._chunk_settings = ChunkSettings(token_context_size=MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE[model_name])
+        self._model = Config.MODELS[model_name]
+        self._chunk_settings = ChunkSettings(token_context_size=self._model.context_window_token_size)
         self._qdrant_client = create_qdrant_collection(
-            collection_name=QDRANT_COLLECTION_NAME,
-            embedding_vector_size=MODEL_TO_EMBEDDING_VECTOR_SIZE[model_name]
+            collection_name=Config.QDRANT_COLLECTION_NAME,
+            embedding_vector_size=self._model.embedding_vector_size
         )
 
     @property

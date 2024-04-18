@@ -2,38 +2,33 @@ import os
 from warnings import warn
 
 import ollama
-from joblib import Parallel, delayed
 from openai import OpenAI
 from tenacity import retry, wait_exponential
 
-from yt_chat.utils.tqdm_joblib import tqdm_joblib
+from yt_chat.utils.parallel import parallel
 from tqdm import tqdm
 
-from functools import partial
+from yt_chat.config_models import ConfigModels
 
-def parallel(method):
-    def wrapper(self, *args, **kwargs):
-        items = args[0] # Assuming args[0] is the list of items to parallelize
-        n_jobs = kwargs.get('n_jobs', 8)  # Default value of n_jobs is 8
-
-        # Calculate total number of items to process
-        total_items = len(items)
-
-        # Create tqdm_joblib context manager for progress bar
-        with tqdm_joblib(tqdm(desc="Parallelizing batches...", total=total_items)):
-            # Call the original method with provided arguments
-            result = Parallel(n_jobs=n_jobs, prefer="threads")(
-                delayed(method)(self, item, *args[1:], **kwargs) for item in items
-            )
-            return result
-    return wrapper
-
-
-class OpenAILLM:
-    def __init__(self, model_name: str, embedding_model_name: str):
+class BaseLLM:
+    def __init__(self, model_name: str):
         self.model_name = model_name
-        self.embedding_model_name = embedding_model_name
+        self.embedding_model_name = ConfigModels.MODEL_TO_EMBEDDING_MODEL_NAME.get(model_name)
+        self.embedding_vector_size = ConfigModels.MODEL_TO_EMBEDDING_VECTOR_SIZE.get(model_name)
+        self.context_window_token_size = ConfigModels.MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE.get(model_name)
+        self.generate_context_messages_func = ConfigModels.MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC.get(model_name)
 
+        # Specific to yt-chat below
+        self.generate_summarize_transcript_messages_func = (
+            ConfigModels.MODEL_TO_GENERATE_SUMMARIZE_TRANSCRIPT_MESSAGES_FUNC.get(model_name)
+        )
+        self.generate_summarize_summaries_messages_func = (
+            ConfigModels.MODEL_TO_GENERATE_SUMMARIZE_SUMMARIES_MESSAGES_FUNC.get(model_name)
+        )
+
+class OpenAILLM(BaseLLM):
+    def __init__(self, model_name: str):
+        super().__init__(model_name)
         self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
     def embed(self, prompt: str):
@@ -50,22 +45,33 @@ class OpenAILLM:
     def predict_batch_parallel(self, prompts: list[str], temperature: float, n_jobs: int = 8):
         return self.predict(prompts, temperature)
 
-    #@retry(wait=wait_exponential(multiplier=1, min=2, max=6)) # TODO: fix?
+    # @retry(wait=wait_exponential(multiplier=1, min=2, max=6)) # TODO: fix?
     def predict_messages(self, messages: list[dict[str, str]], temperature: float):
-        return self.client.chat.completions.create(model=self.model_name,
-                                                   messages=messages,
-                                                   max_tokens=None,
-                                                   temperature=temperature,
-                                                   ).choices[0].message.content
+        return (
+            self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                max_tokens=None,
+                temperature=temperature,
+            )
+            .choices[0]
+            .message.content
+        )
 
     @parallel
-    def predict_messages_batch_parallel(self, list_messages: list[list[dict[str, str]]], temperature: float, n_jobs: int = 8):
+    def predict_messages_batch_parallel(
+        self,
+        list_messages: list[list[dict[str, str]]],
+        temperature: float,
+        n_jobs: int = 8,
+    ):
         return self.predict_messages(list_messages, temperature)
 
-class OllamaLLM:
+
+class OllamaLLM(BaseLLM):
     # TODO: VLLM for when deploying at-scale
     def __init__(self, model_name: str):
-        self.model_name = model_name
+        super().__init__(model_name)
 
     def embed(self, prompt: str):
         ollama.pull(self.model_name)
