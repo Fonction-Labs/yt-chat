@@ -40,18 +40,14 @@ If you don't want to bother, you can also use try the online version (only handl
 
 Using Chat-GPT 3.5
 ------------
-This is if you wish to use an `OpenAI` model, for example `gpt-3.5`.
-
-You will need your OpenAI API key, which you can get from <a href="https://platform.openai.com/api-keys">here</a>.
+If you wish to use an `OpenAI` model, for example `gpt-3.5`, you will need your OpenAI API key, which you can get from <a href="https://platform.openai.com/api-keys">here</a>.
 
 Once you've input your OpenAI API key, select the `Chat-GPT` chat profile in the UI.
 
 
 Using Mistral-7B
 ------------
-This is if you wish to use a local `ollama` model, for example `mistral-7b`.
-
-You will need to install <a href="https://ollama.com/">ollama</a> on your machine.
+If you wish to use a local `ollama` model, for example `mistral-7b`, you will need to install <a href="https://ollama.com/">ollama</a> on your machine.
 
 When running `yt-chat` for the first time, you will asked for an OpenAI API key. This is irrelevant for local models. Enter anything to continue.
 
