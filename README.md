@@ -1,38 +1,64 @@
-# yt-chat
-Summarize and chat with a bot about a youtube video
+<div align="center">
+  <picture align="center" with="200">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/mcordier/yt-chat/blob/5bbae54e1c9f46f11af9090a83089786d9832e6f/public/logo_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/mcordier/yt-chat/blob/5bbae54e1c9f46f11af9090a83089786d9832e6f/public/logo_light.png">
+  <img alt="yt-chat logo" src="https://github.com/mcordier/yt-chat/blob/5bbae54e1c9f46f11af9090a83089786d9832e6f/public/logo_light.png" width="400"/>
+  </picture>
+</div>
 
-### Install
+
+<h3 align="center">yt-chat is a tool designed to help you summarize any Youtube video.</h3>
+<h4 align="center">Once a video is summarized, you can also ask more precise questions about the video in question.</h4>
+
+---
+
+<div align="center">
+<!-- <img alt="All workflows" src="https://github.com/Fonction-Labs/jade/actions/workflows/all.yml/badge.svg"/> -->
+
+<a href="https://github.com/Fonction-Labs/jade/actions/workflows/all.yml?query=branch%3Amain">
+<img alt="Python version" src="https://img.shields.io/badge/python-3.9-blue"/>
+</a>
+
+<a href="https://fonctionlabs.com/yt-chat">
+<img alt="Try live!" src="https://img.shields.io/static/v1?label=&message=Try live!"/>
+</a>
+</div>
+
+Installation
+------------
 ```
 poetry install
+```
+
+To run `yt-chat`, simply do:
+```
 poetry run python yt-chat/app.py
 ```
 
-### If you wish to use `gpt-3.5` (with your OpenAI API key):
-```
-export OPENAI_API_KEY='<MY-OPENAI-API-KEY>'
-```
+If you don't want to bother, you can also use try the online version (only handles OpenAI).
 
-Don't forget to set `MODEL_CHOICE` in `app.py` to `"GPT"`.
 
-### If you wish to use `mistral-7b` (local model):
+Using ChatGPT 3.5
+------------
+If you wish to use an `OpenAI` model, for example `gpt-3.5`, you will need your OpenAI API key, which you can get from <a href="https://platform.openai.com/api-keys">here</a>.
 
-1. Install Python for ARM64
-```
-wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh
-bash Miniforge3-MacOSX-arm64.sh
-```
+Once you've input your OpenAI API key, select the `Chat-GPT` chat profile in the UI.
 
-2. Download the GGUF-format `mistral-7b-instruct-v0.2.Q5_K_S.gguf` weights from [here](https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF) and move them to the root of this repository.
 
-3. Use this ARM64 version of Python for the poetry environment associated to this project
-```
-poetry env use /PATH/TO/MINIFORGE3/miniforge3/bin/python3
-poetry install
-```
+Using Mistral-7B
+------------
+If you wish to use a local `ollama` model, for example `mistral-7b`, you will need to install <a href="https://ollama.com/">ollama</a> on your machine.
 
-4. Install `llama-cpp-python` (with Metal support if you are using an Apple Silicon Mac)
-```
-CMAKE_ARGS="-DLLAMA_METAL=on" poetry run python -m pip install -U llama-cpp-python --no-cache-dir
-```
+First, make sure your ollama server is running. Then, run `yt-chat` (when running `yt-chat` for the first time, you will asked for an OpenAI API key; this is irrelevant for local models, enter anything to continue).
 
-Don't forget to set `MODEL_CHOICE` in `app.py` to `"MISTRAL"`.
+Once `yt-chat` is running, simply select the `Mistral` chat profile in the UI.
+
+
+Customizing with your own models
+------------
+If you wish to use `yt-chat` with other models than `gpt-3.5` or `mistral-7b`, check out this <a href="">tutorial</a>.
+
+
+Thanks
+------------
+**yt-chat** is powered by <a href="https://github.com/Chainlit/chainlit">chainlit</a> and <a href="https://github.com/ollama/ollama-python">ollama</a>.

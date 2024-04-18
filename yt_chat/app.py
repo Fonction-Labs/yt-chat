@@ -1,144 +1,158 @@
 import os
-import argparse
-from fastapi import FastAPI, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
-from tqdm import tqdm
-from functools import reduce, cache
+import chainlit as cl
+from chainlit import make_async
+from typing import Optional
 
+from yt_chat.internal_state import InternalState
+
+from yt_chat.utils.youtube import is_valid_youtube_url
 from yt_chat.utils.transcript import get_video_transcript
-from yt_chat.utils.chunk_text import get_text_chunks
-from yt_chat.utils.qdrant import create_qdrant_collection
 from yt_chat.llm.summarize import summarize_transcript
-from yt_chat.llm.retriever import (
-    embed_and_store_chunks,
-    retrieve_top_k_chunks_for_query,
-)
+from yt_chat.llm.answer import embed_and_store_text, answer_query
 
-from yt_chat.settings import (
-    QDRANT_COLLECTION_NAME,
-    MODELS,
-    MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE,
-    MODEL_TO_EMBEDDING_VECTOR_SIZE,
-    MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC,
-)
-
-
-class ChunkSettings:
-    def __init__(self, model):
-        token_context_size = MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE[model.model_name]
-        safety_percentage = 0.7  # "Hard-coded" - this is to avoid going over the window context size of the model when chunking text
-        characters_per_token = 4  # "Hard-coded" - this is the average value for the numbers of characters per token
-        # We choose to chunk our input text so that each chunk takes half of the context window size of the model
-        self.chunk_size = int(
-            token_context_size * characters_per_token * safety_percentage
-        )
-        # We choose a chunk overlap of 10% of the chunk size
-        self.chunk_overlap = int(self.chunk_size * 0.1)
-
+from yt_chat.config import Config
 
 # TODO: use hypothetical answer
 # TODO (optional): use automatic rephrasing of query (perf / quality)
 # TODO: use chat history as context
-def get_app(model_name):
-    model = MODELS[model_name]
-    chunk_settings = ChunkSettings(model)
-    collection_name = QDRANT_COLLECTION_NAME
 
-    # Create qdrant collection and get qdrant client
-    qdrant_client = create_qdrant_collection(collection_name=QDRANT_COLLECTION_NAME,
-                                             embedding_vector_size=MODEL_TO_EMBEDDING_VECTOR_SIZE[model.model_name])
+# TODO: send chat message if youtube transcript does not exist for video
+# TODO: handle error (send chat message) if rate limit or connection error on OpenAI
 
-    app = FastAPI()
-    templates = Jinja2Templates(directory="yt_chat/templates")
-    chat_history = {}
+# TODO: tests
+# TODO: docker
 
-    @app.get("/", response_class=HTMLResponse)
-    async def index(request: Request):
-        return templates.TemplateResponse(
-            "index.html", {"request": request, "video_url": None, "summary": None}
-        )
+# ------ CHAINLIT CHAT PROFILES AND INTERNAL STATE ------
 
-    @app.post("/summarize", response_class=HTMLResponse)
-    async def summarize(request: Request, video_url: str = Form(...)):
+CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "chat-gpt", "Mistral": "mistral"}
+
+def set_internal_state() -> InternalState:
+    chat_profile = cl.user_session.get("chat_profile")
+    api_key = cl.user_session.get("env")["OPENAI_API_KEY"]
+
+    model_name = CHAT_PROFILE_TO_MODEL_NAME.get(chat_profile)
+    if model_name:
+        internal_state = InternalState(model_name, api_key)
+        cl.user_session.set("internal_state", internal_state)
+        return internal_state
+    else:
+        raise ValueError("Unknown chat profile or model name")
+
+
+def get_internal_state() -> Optional[InternalState]:
+    return cl.user_session.get("internal_state")
+
+
+@cl.set_chat_profiles
+async def chat_profile():
+    return [
+        cl.ChatProfile(
+            name="ChatGPT",
+            markdown_description="The underlying LLM model is **GPT-3.5**.",
+            icon="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png",
+        ),
+        cl.ChatProfile(
+            name="Mistral",
+            markdown_description="The underlying LLM model is **Mistral 7B**.",
+            icon="https://cdn.jaimelesstartups.fr/wp-content/uploads/2024/02/announcing-mistral.png",
+        ),
+    ]
+
+# ------------
+
+# ------ CHAINLIT PROCESSES ------
+
+
+@cl.on_chat_start
+async def main():
+    """
+    Executed on every new chat start (change profile)
+    """
+    internal_state = set_internal_state()
+    await cl.Avatar(
+        name="yt-chat",
+        url="./public/avatar.png",
+    ).send()
+    await chainlit_summarize_video(internal_state)
+
+
+async def chainlit_summarize_video(internal_state):
+    response = await cl.AskUserMessage(
+        content="Please specify the YouTube URL you want to summarize."
+    ).send()
+
+    if response and is_valid_youtube_url(response["output"]):
+        video_url = response["output"]
 
         # Get video transcript
-        transcript = get_video_transcript(video_url)
-        # Cut transcript text into chunks
-        chunks = get_text_chunks(
-            transcript, chunk_settings.chunk_size, chunk_settings.chunk_overlap
-        )
-        # Embed and store chunks
-        embed_and_store_chunks(model, chunks, qdrant_client, collection_name)
+        transcript = await make_async(get_video_transcript)(video_url)
 
-        # Chunk transcript and summarize
-        # TODO: have summarize_transcript take only chunks and only summarize
-        summary = summarize_transcript(
-            model=model,
-            transcript=transcript,
-            chunk_size=chunk_settings.chunk_size,
-            chunk_overlap=chunk_settings.chunk_overlap,
+        output_message = cl.Message(content="")
+        await output_message.send()
+
+        # Summarize transcript
+        summary = await make_async(summarize_transcript)(
+            transcript, internal_state.model, internal_state.chunk_settings
         )
 
-        chat_history[video_url] = []  # Initialize chat history for the video
-        return templates.TemplateResponse(
-            "index.html",
-            {
-                "request": request,
-                "video_url": video_url,
-                "summary": summary,
-                "chat_history": chat_history.get(video_url, []),
-            },
+        output_message.content = f"Here is the summary of the YouTube video:\n{summary}"
+        await output_message.update()
+
+        # Compute and store embeddings for later chatting
+        await make_async(embed_and_store_text)(
+            transcript,
+            internal_state.model,
+            internal_state.chunk_settings,
+            internal_state.qdrant_client,
         )
-
-    @app.post("/chat", response_model=dict)
-    async def chat(
-        request: Request, video_url: str = Form(...), user_message: str = Form(...)
-    ):
-        if video_url not in chat_history:
-            raise HTTPException(status_code=404, detail="Video chat history not found")
-
-        # Register user message in chat history
-        chat_history[video_url].append({"role": "user", "content": user_message})
-
-        # Retrieve top_k chunks for query
-        query = user_message
-        top_k_chunks_for_query = retrieve_top_k_chunks_for_query(
-            model, query, qdrant_client, collection_name, top_k=5
-        )
-        # Merge top_k chunks into a single string for context
-        context = " ".join(top_k_chunks_for_query)
-
-        # Generate LLM "context"-type message
-        messages_with_context = MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC[
-            model.model_name
-        ](query, context=context)
-
-        # Get LLM response
-        bot_response = model.predict_messages(messages_with_context, temperature=0.0)
-
-        # Append LLM rsponse to chat history
-        chat_history[video_url].append({"role": "bot", "content": bot_response})
-
-        # Return result
-        return {"bot_response": bot_response, "chat_history": chat_history[video_url]}
-
-    return app
+        await chainlit_ask_if_new_video(internal_state)
+    else:
+        await cl.Message(content="You did not provide a valid YouTube URL.").send()
+        await chainlit_summarize_video(internal_state)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Run FastAPI server with model options"
+async def chainlit_ask_if_new_video(internal_state):
+    action = await cl.AskActionMessage(
+        content="Do you want to summarize a new video?",
+        actions=[
+            cl.Action(
+                name="New video?", value="new_video", label="🔁 Yes, summarize new video"
+            ),
+            cl.Action(
+                name="Continue chatting",
+                value="continue",
+                label="➡️  No, continue chatting",
+            ),
+        ],
+    ).send()
+
+    if action and action.get("value") == "new_video":
+        # When we work with a new video, we need to start with a new internal state (new vector database)
+        internal_state = set_internal_state()
+        await chainlit_summarize_video(internal_state)
+
+
+@cl.on_message
+async def on_message(message: cl.Message):
+    internal_state = get_internal_state()
+
+    output = cl.Message(content="")
+    await output.send()
+
+    answer = await make_async(answer_query)(
+        query=message.content,
+        model=internal_state.model,
+        qdrant_client=internal_state.qdrant_client,
     )
-    parser.add_argument(
-        "--model_name",
-        choices=MODELS.keys(),
-        default=list(MODELS.keys())[0],
-        help="Choose the model to use for chat and summarize functions",
-    )
-    args = parser.parse_args()
-    app = get_app(args.model_name)
 
-    import uvicorn
+    output.content = answer
+    await output.update()
+    await chainlit_ask_if_new_video(internal_state)
 
-    uvicorn.run(app, host="0.0.0.0", port=9000)
+
+@cl.on_settings_update
+async def setup_agent(settings):
+    print("on_settings_update", settings)
+
+
+# ------------

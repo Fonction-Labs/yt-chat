@@ -1,23 +1,3 @@
-from pydantic import BaseModel
-
-from yt_chat.llm.models import OpenAILLM, OllamaLLM
-
-QDRANT_COLLECTION_NAME = "yt_chat"
-MODELS = {
-    # First in this dictionary will be the default for the cli
-    "gpt-3.5-turbo": OpenAILLM("gpt-3.5-turbo", "text-embedding-3-small"),
-    "mistral": OllamaLLM("mistral"),
-}
-
-MODEL_TO_EMBEDDING_VECTOR_SIZE = {"gpt-3.5-turbo": 1536, # small embedding
-                                  "mistral": 1024,
-                                  }
-
-MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE = {
-        "gpt-3.5-turbo": 4096,
-        "mistral": 4096,
-        }
-
 # ------ GENERAL CONTEXT MESSAGES ------
 def generate_openai_context_message(question, context):
     return [
@@ -92,20 +72,3 @@ def generate_mistral_summarize_summaries_message(summaries: str):
             ### DISTILLED ANSWER:
             """,
     }]
-
-MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC = {
-    "gpt-3.5-turbo": generate_openai_context_message,
-    "mistral": generate_mistral_context_message,
-}
-
-MODEL_TO_GENERATE_SUMMARIZE_TRANSCRIPT_MESSAGES_FUNC = {
-    "gpt-3.5-turbo": generate_openai_summarize_transcript_message,
-    "mistral": generate_mistral_summarize_transcript_message,
-}
-
-MODEL_TO_GENERATE_SUMMARIZE_SUMMARIES_MESSAGES_FUNC = {
-    "gpt-3.5-turbo": generate_openai_summarize_summaries_message,
-    "mistral": generate_mistral_summarize_summaries_message,
-}
-
-
