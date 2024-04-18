@@ -15,8 +15,8 @@ from yt_chat.llm.answer import embed_and_store_text, answer_query
 
 # ------ CHAINLIT CHAT PROFILES AND INTERNAL STATE ------
 
-CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT (3.5)": "gpt-3.5-turbo",
-                              "Mistral (7B)": "mistral"}
+CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "gpt-3.5-turbo",
+                              "Mistral": "mistral"}
 
 def set_internal_state() -> InternalState:
     chat_profile = cl.user_session.get("chat_profile")
@@ -35,13 +35,13 @@ def get_internal_state() -> Optional[InternalState]:
 async def chat_profile():
     return [
         cl.ChatProfile(
-            name="ChatGPT (3.5)",
+            name="ChatGPT",
             markdown_description="The underlying LLM model is **GPT-3.5**.",
             icon="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png",
         ),
         cl.ChatProfile(
-            name="Mistral (7B)",
-            markdown_description="The underlying LLM model is **Mistral**.",
+            name="Mistral",
+            markdown_description="The underlying LLM model is **Mistral 7B**.",
             icon="https://cdn.jaimelesstartups.fr/wp-content/uploads/2024/02/announcing-mistral.png",
         ),
     ]
