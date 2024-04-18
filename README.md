@@ -1,7 +1,35 @@
-# yt-chat
-Summarize and chat with a bot about a youtube video
+<div align="center">
+  <picture align="center" with="200">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/mcordier/yt-chat/blob/5bbae54e1c9f46f11af9090a83089786d9832e6f/public/logo_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/mcordier/yt-chat/blob/5bbae54e1c9f46f11af9090a83089786d9832e6f/public/logo_light.png">
+  <img alt="yt-chat logo" src="https://github.com/mcordier/yt-chat/blob/5bbae54e1c9f46f11af9090a83089786d9832e6f/public/logo_light.png" width="400"/>
+  </picture>
+</div>
 
-### Install
+
+<h1 align="center">yt-chat</h1>
+<h3 align="center">yt-chat is a tool designed to help you summarize any Youtube video.</h3>
+<h4 align="center">Once a video is summarized, you can also ask more precise questions about the video in question.<br>Enjoy!</h4>
+
+---
+
+<div align="center">
+<a href="https://fonctionlabs.com/yt-chat">
+<img alt="Try live!" src="https://img.shields.io/static/v1?label=&message=Try live!"/>
+</a>
+</div>
+
+---
+
+<div align="center">
+<a href="https://github.com/Fonction-Labs/jade/actions/workflows/all.yml?query=branch%3Amain">
+<!-- <img alt="All workflows" src="https://github.com/Fonction-Labs/jade/actions/workflows/all.yml/badge.svg"/> -->
+<img alt="Python version" src="https://img.shields.io/badge/python-3.9-blue"/>
+</a>
+</div>
+
+Installation
+------------
 ```
 poetry install
 poetry run python yt-chat/app.py
