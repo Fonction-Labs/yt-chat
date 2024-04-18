@@ -38,7 +38,7 @@ poetry run python yt-chat/app.py
 If you don't want to bother, you can also use try the online version (only handles OpenAI).
 
 
-Using Chat-GPT 3.5
+Using ChatGPT 3.5
 ------------
 If you wish to use an `OpenAI` model, for example `gpt-3.5`, you will need your OpenAI API key, which you can get from <a href="https://platform.openai.com/api-keys">here</a>.
 
@@ -49,9 +49,9 @@ Using Mistral-7B
 ------------
 If you wish to use a local `ollama` model, for example `mistral-7b`, you will need to install <a href="https://ollama.com/">ollama</a> on your machine.
 
-When running `yt-chat` for the first time, you will asked for an OpenAI API key. This is irrelevant for local models. Enter anything to continue.
+First, make sure your ollama server is running. Then, run `yt-chat` (when running `yt-chat` for the first time, you will asked for an OpenAI API key; this is irrelevant for local models, enter anything to continue).
 
-Then, simply select the `Mistral` chat profile in the UI.
+Once `yt-chat` is running, simply select the `Mistral` chat profile in the UI.
 
 
 Customizing with your own models
