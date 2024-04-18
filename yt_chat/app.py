@@ -17,8 +17,7 @@ from yt_chat.llm.answer import embed_and_store_text, answer_query
 
 # ------ CHAINLIT CHAT PROFILES AND INTERNAL STATE ------
 
-CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "gpt-3.5-turbo", "Mistral": "mistral"}
-
+CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "chat-gpt", "Mistral": "mistral"}
 
 def set_internal_state() -> InternalState:
     chat_profile = cl.user_session.get("chat_profile")
@@ -62,6 +61,10 @@ async def main():
     Executed on every new chat start (change profile)
     """
     internal_state = set_internal_state()
+    await cl.Avatar(
+        name="yt-chat",
+        url="./public/avatar.png",
+    ).send()
     await chainlit_summarize_video(internal_state)
 
 

@@ -8,11 +8,10 @@ from .config_models_messages import (
 )
 
 class ConfigModels:
-
-    MODEL_TO_MODEL_TYPE = {
-        "gpt-3.5-turbo": "openai",
-        "mistral": "ollama",
-    }
+    """
+    This maps model reference names to various model properties and
+    message (prompts) generation functions.
+    """
 
     MODEL_TO_EMBEDDING_MODEL_NAME = {
         "gpt-3.5-turbo": "text-embedding-3-small",  # small embedding
