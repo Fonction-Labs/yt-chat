@@ -30,7 +30,7 @@ latex = false
 
 # Authorize users to upload files with messages
 [features.multi_modal]
-    enabled = true
+    enabled = false
     accept = ["*/*"]
     max_files = 20
     max_size_mb = 500
@@ -46,7 +46,7 @@ latex = false
 name = "yt-chat"
 
 # Show the readme while the thread is empty.
-show_readme_as_default = true
+show_readme_as_default = false
 
 # Description of the app and chatbot. This is used for HTML tags.
 # description = ""
