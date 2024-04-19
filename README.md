@@ -10,6 +10,10 @@
 <h3 align="center">yt-chat is a tool designed to help you summarize any Youtube video.</h3>
 <h4 align="center">Once a video is summarized, you can also ask more precise questions about the video in question.</h4>
 
+<div align="center">
+<img src="https://github.com/mcordier/yt-chat/assets/40168022/daa1f7b3-0cf8-414c-9200-429142b4e251"></img>
+</div>
+
 ---
 
 <div align="center">
