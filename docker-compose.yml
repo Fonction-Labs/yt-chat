@@ -1,6 +1,6 @@
 version: '3'
 services:
-  yt-chat-app:
+  yt-chat:
     image: yt-chat-app:latest
     build: ./app
     command: chainlit run yt_chat/app.py
