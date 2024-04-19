@@ -5,8 +5,10 @@ from typing import Optional
 
 from yt_chat.internal_state import InternalState
 
-from yt_chat.utils.youtube import is_valid_youtube_url
-from yt_chat.utils.transcript import get_video_transcript
+from yt_chat.utils.youtube import (
+    is_valid_youtube_url,
+    get_video_transcript_and_duration,
+)
 from yt_chat.llm.summarize import summarize_transcript
 from yt_chat.llm.answer import embed_and_store_text, answer_query
 
@@ -15,16 +17,13 @@ from yt_chat.config import Config
 # TODO: use hypothetical answer
 # TODO (optional): use automatic rephrasing of query (perf / quality)
 # TODO: use chat history as context
-
-# TODO: send chat message if youtube transcript does not exist for video
-# TODO: handle error (send chat message) if rate limit or connection error on OpenAI
-
 # TODO: tests
 # TODO: docker
 
 # ------ CHAINLIT CHAT PROFILES AND INTERNAL STATE ------
 
-CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "chat-gpt", "Mistral": "mistral"}
+CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "chatgpt", "Mistral": "mistral"}
+
 
 def set_internal_state() -> InternalState:
     chat_profile = cl.user_session.get("chat_profile")
@@ -58,6 +57,7 @@ async def chat_profile():
         ),
     ]
 
+
 # ------------
 
 # ------ CHAINLIT PROCESSES ------
@@ -78,25 +78,42 @@ async def main():
 
 async def chainlit_summarize_video(internal_state):
     response = await cl.AskUserMessage(
-        content="Please specify the YouTube URL you want to summarize."
+        content="Please specify a YouTube URL for a video you want to summarize."
     ).send()
 
     if response and is_valid_youtube_url(response["output"]):
         video_url = response["output"]
 
         # Get video transcript
-        transcript = await make_async(get_video_transcript)(video_url)
+        transcript, duration = await make_async(get_video_transcript_and_duration)(
+            video_url
+        )
+        if transcript is None:
+            await cl.Message(
+                content="Unfortunately, no transcript exists for the provided YouTube video."
+            ).send()
+            await chainlit_summarize_video(internal_state)
 
-        output_message = cl.Message(content="")
-        await output_message.send()
+        # Prepare output chat message
+        output = cl.Message(content="")
+        await output.send()
+
+        from openai import OpenAIError
 
         # Summarize transcript
-        summary = await make_async(summarize_transcript)(
-            transcript, internal_state.model, internal_state.chunk_settings
-        )
+        try:
+            summary = await make_async(summarize_transcript)(
+                transcript, internal_state.model, internal_state.chunk_settings
+            )
+        except OpenAIError as e:
+            await cl.Message(
+                content=f"Error authenticating to the OpenAI API.\n\nMake sure the API key you provided is correct (click on your avatar, and then on **API Keys** to set your key in **yt-chat**).\n\n{e}"
+            ).send()
+            await chainlit_summarize_video(internal_state)
 
-        output_message.content = f"Here is the summary of the YouTube video:\n{summary}"
-        await output_message.update()
+        # Send output message
+        output.content = f"Here is the summary of the YouTube video:\n{summary}\n\n**yt-chat** just saved you **{duration} minutes** of your life! 🕰️"
+        await output.update()
 
         # Compute and store embeddings for later chatting
         await make_async(embed_and_store_text)(
@@ -116,7 +133,9 @@ async def chainlit_ask_if_new_video(internal_state):
         content="Do you want to summarize a new video?",
         actions=[
             cl.Action(
-                name="New video?", value="new_video", label="🔁 Yes, summarize new video"
+                name="New video?",
+                value="new_video",
+                label="🔁 Yes, summarize a new video",
             ),
             cl.Action(
                 name="Continue chatting",
@@ -143,6 +162,8 @@ async def on_message(message: cl.Message):
         query=message.content,
         model=internal_state.model,
         qdrant_client=internal_state.qdrant_client,
+        top_k=Config.RETRIEVAL_TOP_K,
+        use_hypothetical=Config.RETRIEVAL_USE_HYPOTHETICAL,
     )
 
     output.content = answer

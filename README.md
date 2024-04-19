@@ -26,39 +26,53 @@
 
 Installation
 ------------
+After cloning the repository, and with [`poetry`](https://python-poetry.org/) installed, run the following command from the repository root:
 ```
 poetry install
 ```
 
 To run `yt-chat`, simply do:
 ```
-poetry run python yt-chat/app.py
+poetry run chainlit run yt_chat/app.py -w
 ```
 
-If you don't want to bother, you can also use try the online version (only handles OpenAI).
+If you don't want to bother, you can also use try the [online version](https://fonctionlabs.com/yt-chat) (only handles OpenAI).
 
 
-Using ChatGPT 3.5
+Using ChatGPT-3.5
 ------------
-If you wish to use an `OpenAI` model, for example `gpt-3.5`, you will need your OpenAI API key, which you can get from <a href="https://platform.openai.com/api-keys">here</a>.
+If you wish to use an `OpenAI` model, for example `gpt-3.5`, you will need your [OpenAI API key](https://platform.openai.com/api-keys).
 
-Once you've input your OpenAI API key, select the `Chat-GPT` chat profile in the UI.
+Once you've input your OpenAI API key requested by `yt-chat`, select the `ChatGPT` chat profile in the UI.
 
 
 Using Mistral-7B
 ------------
-If you wish to use a local `ollama` model, for example `mistral-7b`, you will need to install <a href="https://ollama.com/">ollama</a> on your machine.
+If you wish to use a local `ollama` model, for example `mistral-7b`, you will need to install [ollama](https://ollama.com/) on your machine.
 
-First, make sure your ollama server is running. Then, run `yt-chat` (when running `yt-chat` for the first time, you will asked for an OpenAI API key; this is irrelevant for local models, enter anything to continue).
+First, make sure your `ollama` server is running. Then, run `yt-chat` (when running `yt-chat` for the first time, you will asked for an OpenAI API key; this is irrelevant for local models, enter anything to continue).
 
 Once `yt-chat` is running, simply select the `Mistral` chat profile in the UI.
 
 
-Customizing with your own models
+Configuration
+------------
+Check out `yt_chat/config.py` and `yt_chat/config_messages.py` for configuring the app parameters and prompts.
+
+
+Adding your own models
 ------------
 If you wish to use `yt-chat` with other models than `gpt-3.5` or `mistral-7b`, check out this <a href="">tutorial</a>.
 
 
-Thanks
+Docker
 ------------
-**yt-chat** is powered by <a href="https://github.com/Chainlit/chainlit">chainlit</a> and <a href="https://github.com/ollama/ollama-python">ollama</a>.
+We provide Docker support:
+```
+docker-compose up -d --build
+```
+
+
+Acknowledgments
+------------
+**yt-chat** is powered by **[chainlit](https://github.com/Chainlit/chainlit)**, **[qdrant](https://github.com/qdrant/qdrant)**, and **[ollama](https://github.com/ollama/ollama-python)**.
