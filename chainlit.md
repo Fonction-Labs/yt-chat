@@ -7,3 +7,5 @@ Once a video is summarized, you can also ask more precise questions about the vi
 Enjoy!
 
 #abregefrere
+
+Feel free to contribute to our [GitHub repository](https://github.com/mcordier/yt-chat)!
