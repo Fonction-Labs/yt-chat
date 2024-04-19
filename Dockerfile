@@ -31,6 +31,9 @@ COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 WORKDIR /app
 
-COPY . .
+COPY ./yt_chat/app.py ./yt_chat/app.py
+COPY ./.chainlit ./.chainlit
+COPY ./public ./public
+COPY chainlit.md ./
 
 CMD ["chainlit", "run", "yt_chat/app.py"]

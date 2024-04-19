@@ -3,7 +3,6 @@ services:
   yt-chat:
     image: yt-chat:latest
     build: ./app
-    command: chainlit run yt_chat/app.py
     volumes:
       - ./yt_chat/:/app/yt_chat
     ports:
