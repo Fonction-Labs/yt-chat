@@ -61,4 +61,4 @@ If you wish to use `yt-chat` with other models than `gpt-3.5` or `mistral-7b`, c
 
 Thanks
 ------------
-**yt-chat** is powered by <a href="https://github.com/Chainlit/chainlit">chainlit</a> and <a href="https://github.com/ollama/ollama-python">ollama</a>.
+**yt-chat** is powered by <bold><a href="https://github.com/Chainlit/chainlit">chainlit</a></bold>, <bold><a href="https://github.com/qdrant/qdrant">qdrant</a></bold>, and <bold><a href="https://github.com/ollama/ollama-python">ollama</a></bold>.

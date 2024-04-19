@@ -1,5 +1,6 @@
-# ------ GENERAL CONTEXT MESSAGES ------
+# ------ GENERAL MESSAGES (CONTEXT AND HYPOTHETICAL) ------
 def generate_openai_context_message(question, context):
+    # Custom prompt (not sure this is optimal)
     return [
         {"role": "system", "content": "You are a helpful assistant."},
         {
@@ -13,6 +14,7 @@ def generate_openai_context_message(question, context):
 
 
 def generate_mistral_context_message(question, context):
+    # Prompt from https://docs.mistral.ai/guides/basic-RAG/
     return [
         {"role": "system", "content": "You are a helpful assistant."},
         {
@@ -28,7 +30,31 @@ def generate_mistral_context_message(question, context):
         },
     ]
 
+
+def generate_openai_hypothetical_message(question):
+    # Prompt from: https://docs.haystack.deepset.ai/docs/hypothetical-document-embeddings-hyde
+    return [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {
+            "role": "user",
+            "content": f"""Given a question, generate a paragraph of text that answers the question.    Question: {question}    Paragraph:""",
+        },
+    ]
+
+
+def generate_mistral_hypothetical_message(question):
+    # Same prompt as OpenAI with additional "the same way it was formulated"
+    return [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {
+            "role": "user",
+            "content": f"""Given a question, generate a paragraph of text that answers the question the same way it was formulated.    Question: {question}    Paragraph:""",
+        },
+    ]
+
 # ------ YOUTUBE SUMMARIES MESSAGES ------
+# (these are all custom prompts)
+
 def generate_openai_summarize_transcript_message(transcript: str):
     return [{
         "role": "user",

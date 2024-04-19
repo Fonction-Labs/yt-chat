@@ -16,6 +16,7 @@ class BaseLLM:
         self.embedding_vector_size = Config.MODEL_TO_EMBEDDING_VECTOR_SIZE.get(model_name)
         self.context_window_token_size = Config.MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE.get(model_name)
         self.generate_context_messages_func = Config.MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC.get(model_name)
+        self.generate_hypothetical_messages_func = Config.MODEL_TO_GENERATE_HYPOTHETICAL_MESSAGES_FUNC.get(model_name)
 
         # Specific to yt-chat below
         self.generate_summarize_transcript_messages_func = (
