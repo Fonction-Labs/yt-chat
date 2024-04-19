@@ -39,11 +39,11 @@ poetry run chainlit run yt_chat/app.py -w
 If you don't want to bother, you can also use try the [online version](https://fonctionlabs.com/yt-chat) (only handles OpenAI).
 
 
-Using ChatGPT 3.5
+Using ChatGPT-3.5
 ------------
 If you wish to use an `OpenAI` model, for example `gpt-3.5`, you will need your [OpenAI API key](https://platform.openai.com/api-keys).
 
-Once you've input your OpenAI API key requested by `yt-chat`, select the `Chat-GPT` chat profile in the UI.
+Once you've input your OpenAI API key requested by `yt-chat`, select the `ChatGPT` chat profile in the UI.
 
 
 Using Mistral-7B
