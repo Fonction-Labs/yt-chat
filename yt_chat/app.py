@@ -1,10 +1,12 @@
 import os
 import chainlit as cl
 from chainlit import make_async
+from openai import OpenAIError
 from typing import Optional
 
 from yt_chat.internal_state import InternalState
 
+from yt_chat.utils.stream import stream_string
 from yt_chat.utils.youtube import (
     is_valid_youtube_url,
     get_video_transcript_and_duration,
@@ -14,11 +16,9 @@ from yt_chat.llm.answer import embed_and_store_text, answer_query
 
 from yt_chat.config import Config
 
-# TODO: use hypothetical answer
 # TODO (optional): use automatic rephrasing of query (perf / quality)
 # TODO: use chat history as context
 # TODO: tests
-# TODO: docker
 
 # ------ CHAINLIT CHAT PROFILES AND INTERNAL STATE ------
 
@@ -98,21 +98,23 @@ async def chainlit_summarize_video(internal_state):
         output = cl.Message(content="")
         await output.send()
 
-        from openai import OpenAIError
-
         # Summarize transcript
         try:
             summary = await make_async(summarize_transcript)(
                 transcript, internal_state.model, internal_state.chunk_settings
             )
+            summary = f"Here is the summary of the YouTube video:\n{summary}\n\n**yt-chat** just saved you **{duration} minutes** of your life! 🕰️ "
         except OpenAIError as e:
             await cl.Message(
                 content=f"Error authenticating to the OpenAI API.\n\nMake sure the API key you provided is correct (click on your avatar, and then on **API Keys** to set your key in **yt-chat**).\n\n{e}"
             ).send()
             await chainlit_summarize_video(internal_state)
 
-        # Send output message
-        output.content = f"Here is the summary of the YouTube video:\n{summary}\n\n**yt-chat** just saved you **{duration} minutes** of your life! 🕰️"
+        # Send (streaming) output message
+        summary = stream_string(summary)
+        async for part in summary:
+            await output.stream_token(part)
+        #output.content = summary # alternative if not streaming
         await output.update()
 
         # Compute and store embeddings for later chatting
@@ -166,8 +168,12 @@ async def on_message(message: cl.Message):
         use_hypothetical=Config.RETRIEVAL_USE_HYPOTHETICAL,
     )
 
-    output.content = answer
+    answer = stream_string(answer)
+    async for part in answer:
+        await output.stream_token(part)
+    #output.content = answer # alternative if not streaming
     await output.update()
+
     await chainlit_ask_if_new_video(internal_state)
 
 
