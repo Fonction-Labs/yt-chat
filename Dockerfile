@@ -16,9 +16,7 @@ EXPOSE 8000
 
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock ./
-COPY ./yt_chat ./yt_chat
-COPY ./README.md ./README.md
+COPY . .
 RUN poetry install && rm -rf $POETRY_CACHE_DIR
 
 # The runtime image, used to just run the code provided its virtual environment
