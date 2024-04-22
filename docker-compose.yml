@@ -3,7 +3,7 @@ services:
   yt-chat:
     image: yt-chat:latest
     build: ./app
-    volumes:
-      - ./yt_chat/:/app/yt_chat
+    #volumes:
+    #  - ./yt_chat/:/app/yt_chat
     ports:
       - 8000:8000
