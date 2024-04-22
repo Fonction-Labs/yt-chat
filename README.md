@@ -24,7 +24,7 @@
 </a>
 
 <a href="http://fonctionlabs.com:8000">
-<img alt="Try live!" src="https://img.shields.io/static/v1?label=&message=Try live!"/>
+<img alt="Try live!" src="https://img.shields.io/static/v1?color=green&label=&message=Try live!"/>
 </a>
 </div>
 
