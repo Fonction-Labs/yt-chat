@@ -23,7 +23,7 @@
 <img alt="Python version" src="https://img.shields.io/badge/python-3.10-blue"/>
 </a>
 
-<a href="https://fonctionlabs.com/yt-chat">
+<a href="http://fonctionlabs.com:8000">
 <img alt="Try live!" src="https://img.shields.io/static/v1?label=&message=Try live!"/>
 </a>
 </div>
@@ -40,7 +40,7 @@ To run `yt-chat`, simply do:
 poetry run chainlit run yt_chat/app.py -w
 ```
 
-If you don't want to bother, you can also use try the [online version](https://fonctionlabs.com/yt-chat) (only handles OpenAI).
+If you don't want to bother, you can also use try the [online version](http://fonctionlabs.com:8000) (only handles OpenAI).
 
 
 Using ChatGPT-3.5

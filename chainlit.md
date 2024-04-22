@@ -8,4 +8,4 @@ Enjoy!
 
 #abregefrere
 
-Feel free to contribute to our [GitHub repository](https://github.com/mcordier/yt-chat)!
+Feel free to contribute to our [GitHub repository](https://github.com/Fonction-Labs/yt-chat)!
