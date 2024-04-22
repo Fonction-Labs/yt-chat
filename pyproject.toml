@@ -1,9 +1,11 @@
 [tool.poetry]
-name = "yt_chat"
+name = "yt-chat"
 version = "0.1.0"
 description = "A Flask application for summarizing YouTube videos and chatting with a bot."
 authors = ["mcordier <matt.cordier@icloud.com>"]
 readme = "README.md"
+packages = [{include = "yt_chat"}]
+
 
 [tool.poetry.dependencies]
 python = "^3.9"
