@@ -2,7 +2,8 @@ version: '3'
 services:
   yt-chat:
     image: yt-chat:latest
-    build: ./app
+    container_name: yt-chat
+    build: .
     #volumes:
     #  - ./yt_chat/:/app/yt_chat
     ports:

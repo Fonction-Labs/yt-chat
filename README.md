@@ -16,7 +16,7 @@
 <!-- <img alt="All workflows" src="https://github.com/Fonction-Labs/jade/actions/workflows/all.yml/badge.svg"/> -->
 
 <a href="https://github.com/Fonction-Labs/jade/actions/workflows/all.yml?query=branch%3Amain">
-<img alt="Python version" src="https://img.shields.io/badge/python-3.9-blue"/>
+<img alt="Python version" src="https://img.shields.io/badge/python-3.10-blue"/>
 </a>
 
 <a href="https://fonctionlabs.com/yt-chat">

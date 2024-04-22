@@ -17,6 +17,7 @@ COPY . .
 RUN poetry install && rm -rf $POETRY_CACHE_DIR
 
 # The runtime image, used to just run the code provided its virtual environment
+# slim is required, alpine does not work since gcc is required by chainlit
 FROM python:3.10-slim
 
 ENV VIRTUAL_ENV=/app/.venv \
