@@ -51,7 +51,7 @@ class OpenAILLM(BaseLLM):
             self.client.chat.completions.create(
                 model=self.model_ref_name,
                 messages=messages,
-                max_tokens=None,
+                #max_tokens=None,
                 temperature=temperature,
             )
             .choices[0]
