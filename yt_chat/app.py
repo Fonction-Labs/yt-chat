@@ -70,7 +70,7 @@ async def main():
     """
     internal_state = set_internal_state()
     await cl.Avatar(
-        name="yt-chat",
+        name="doc-chat",
         url="./public/avatar.png",
     ).send()
     await ask_for_file(internal_state)
@@ -89,15 +89,18 @@ async def ask_for_file(internal_state):
     # TODO: write temp pdf file and open it
 
     from pypdf import PdfReader
+    from tqdm import tqdm
+    # Extract text
     filename = "file.pdf"
     reader = PdfReader(filename)
-    for i, page in enumerate(reader.pages[:20]):
-        text = page.extract_text()
-        embed_and_store_text(text, # text
-                             {"pdf_page": i, "pdf_filename": filename}, # meta
-                             internal_state.model,
-                             internal_state.chunk_settings,
-                             internal_state.qdrant_client)
+    pages_text = [page.extract_text() for page in tqdm(reader.pages)]
+    # Embed text pages
+    for i, text in enumerate(pages_text):
+        await make_async(embed_and_store_text)(text, # text for page i
+                                                            {"pdf_page": i, "pdf_filename": filename}, # meta
+                                                            internal_state.model,
+                                                            internal_state.chunk_settings,
+                                                            internal_state.qdrant_client)
 
     # Convert PDF to images
     if False: # Set this to true when running for first time
@@ -107,9 +110,10 @@ async def ask_for_file(internal_state):
         for i in tqdm(range(len(images))):
             images[i].save('temp_images/' + 'page'+ str(i) +'.jpg', 'JPEG')
 
-    await answer_question(internal_state)
+    await on_message(internal_state)
 
-async def answer_question(internal_state):
+@cl.on_message
+async def on_message(internal_state):
     question = await cl.AskUserMessage(
         content="Please ask a question on the document."
     ).send()
@@ -128,12 +132,12 @@ async def answer_question(internal_state):
         )
 
         print("TOP K METAS", top_k_metas)
-
-        for meta in top_k_metas:
-            image_path = 'temp_images/page' + str(meta["pdf_page"]) + '.jpg'
+        page_numbers = sorted([meta["pdf_page"] for meta in top_k_metas])
+        for i in page_numbers:
+            image_path = 'temp_images/page' + str(i) + '.jpg'
             image = cl.Image(path=image_path, name="image", display="inline")
             await cl.Message(
-                content=f"Source material (page {meta['pdf_page']})",
+                content=f"Source material (page {str(i)})",
                 elements=[image],
             ).send()
 
@@ -143,7 +147,9 @@ async def answer_question(internal_state):
             await output.stream_token(part)
         await output.update()
 
-        await answer_question(internal_state)
+        await on_message(internal_state)
+    else:
+        await on_message(internal_state)
 
 @cl.on_settings_update
 async def setup_agent(settings):

@@ -20,10 +20,10 @@ def generate_openai_context_message(question: str, context: str, images: list[Im
     prompt = """Answer the following Question based on the Context only. Only answer from the Context. If you don't know the answer, say 'I don't know'.\n"""
     if images is not None:
         prompt += """Some additional page images (which corresponds to the Context text content) will be provided to help you answer the Question. They may contain figures or tables.\n"""
-    prompt += """Question: {question}\n\n
+    prompt += f"""Question: {question}\n\n
                  Context: {context}\n\n
                  Answer:\n"""
-
+    print(prompt)
     return message(prompt, images)
 
 

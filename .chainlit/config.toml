@@ -43,7 +43,7 @@ latex = false
 
 [UI]
 # Name of the app and chatbot.
-name = "yt-chat"
+name = "doc-chat"
 
 # Show the readme while the thread is empty.
 show_readme_as_default = false
