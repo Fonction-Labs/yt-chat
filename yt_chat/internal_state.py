@@ -6,9 +6,12 @@ from yt_chat.utils.qdrant import SingleCollectionQdrantClient, create_qdrant_cli
 from yt_chat.config import Config
 from yt_chat.llm.models import OpenAILLM, OllamaLLM
 
+from yt_chat.llm.answer import embed_and_store_text, answer_query
+
 # Could not put this in Config due to circular import
 MODEL_TO_MODEL_CLASS = {
     "chatgpt": OpenAILLM,
+    "chatgpt4": OpenAILLM,
     "mistral": OllamaLLM,
 }
 

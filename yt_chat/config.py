@@ -25,7 +25,7 @@ class Config:
 
     RETRIEVAL_USE_HYPOTHETICAL = True
 
-    RETRIEVAL_TOP_K = 5
+    RETRIEVAL_TOP_K = 2
 
     MODEL_TO_MODEL_REF_NAME = {
         "chatgpt": "gpt-3.5-turbo",

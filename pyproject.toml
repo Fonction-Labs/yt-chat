@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "yt-chat"
 version = "0.1.0"
-description = "A Flask application for summarizing YouTube videos and chatting with a bot."
+description = ""
 authors = ["mcordier <matt.cordier@icloud.com>"]
 readme = "README.md"
 packages = [{include = "yt_chat"}]
@@ -16,6 +16,11 @@ ollama = "^0.1.8"
 qdrant-client = "^1.8.2"
 chainlit = "^1.0.504"
 tenacity = "^8.2.3"
+transformers = "^4.40.1" # [torch] for cpu-support only
+torch = "^2.2.2"
+pypdf = "^4.2.0"
+pdf2image = "^1.17.0"
+opencv-python = "^4.9.0.80"
 
 [build-system]
 requires = ["poetry-core"]

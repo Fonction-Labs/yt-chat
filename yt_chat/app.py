@@ -22,7 +22,7 @@ from yt_chat.config import Config
 
 # ------ CHAINLIT CHAT PROFILES AND INTERNAL STATE ------
 
-CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "chatgpt", "Mistral": "mistral"}
+CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "chatgpt4"} #, "Mistral": "mistral"}
 
 
 def set_internal_state() -> InternalState:
@@ -73,109 +73,77 @@ async def main():
         name="yt-chat",
         url="./public/avatar.png",
     ).send()
-    await chainlit_summarize_video(internal_state)
+    await ask_for_file(internal_state)
 
 
-async def chainlit_summarize_video(internal_state):
-    response = await cl.AskUserMessage(
-        content="Please specify a YouTube URL for a video you want to summarize."
+async def ask_for_file(internal_state):
+    files = None
+    while files == None:
+        files = await cl.AskFileMessage(
+            content="Please upload a document to begin!",
+            accept=["text/plain", "application/pdf", "text/csv"],
+            max_size_mb=20,
+            timeout=180,
+        ).send()
+    file = files[0]
+    # TODO: write temp pdf file and open it
+
+    from pypdf import PdfReader
+    filename = "file.pdf"
+    reader = PdfReader(filename)
+    for i, page in enumerate(reader.pages[:20]):
+        text = page.extract_text()
+        embed_and_store_text(text, # text
+                             {"pdf_page": i, "pdf_filename": filename}, # meta
+                             internal_state.model,
+                             internal_state.chunk_settings,
+                             internal_state.qdrant_client)
+
+    # Convert PDF to images
+    if False: # Set this to true when running for first time
+        from pdf2image import convert_from_path
+        from tqdm import tqdm
+        images = convert_from_path(filename)
+        for i in tqdm(range(len(images))):
+            images[i].save('temp_images/' + 'page'+ str(i) +'.jpg', 'JPEG')
+
+    await answer_question(internal_state)
+
+async def answer_question(internal_state):
+    question = await cl.AskUserMessage(
+        content="Please ask a question on the document."
     ).send()
 
-    if response and is_valid_youtube_url(response["output"]):
-        video_url = response["output"]
-
-        # Get video transcript
-        transcript, duration = await make_async(get_video_transcript_and_duration)(
-            video_url
-        )
-        if transcript is None:
-            await cl.Message(
-                content="Unfortunately, no transcript exists for the provided YouTube video."
-            ).send()
-            await chainlit_summarize_video(internal_state)
-
-        # Prepare output chat message
+    if question:
+        question = question["output"]
         output = cl.Message(content="")
         await output.send()
 
-        # Summarize transcript
-        try:
-            summary = await make_async(summarize_transcript)(
-                transcript, internal_state.model, internal_state.chunk_settings
-            )
-            summary = f"Here is the summary of the YouTube video:\n{summary}\n\n**yt-chat** just saved you **{duration} minutes** of your life! 🕰️ "
-        except OpenAIError as e:
+        response, top_k_metas = await make_async(answer_query)(
+            query=question,
+            model=internal_state.model,
+            qdrant_client=internal_state.qdrant_client,
+            top_k=Config.RETRIEVAL_TOP_K,
+            use_hypothetical=Config.RETRIEVAL_USE_HYPOTHETICAL,
+        )
+
+        print("TOP K METAS", top_k_metas)
+
+        for meta in top_k_metas:
+            image_path = 'temp_images/page' + str(meta["pdf_page"]) + '.jpg'
+            image = cl.Image(path=image_path, name="image", display="inline")
             await cl.Message(
-                content=f"Error authenticating to the OpenAI API.\n\nMake sure the API key you provided is correct (click on your avatar, and then on **API Keys** to set your key in **yt-chat**).\n\n{e}"
+                content=f"Source material (page {meta['pdf_page']})",
+                elements=[image],
             ).send()
-            await chainlit_summarize_video(internal_state)
 
         # Send (streaming) output message
-        summary = stream_string(summary)
-        async for part in summary:
+        response = stream_string(response)
+        async for part in response:
             await output.stream_token(part)
-        #output.content = summary # alternative if not streaming
         await output.update()
 
-        # Compute and store embeddings for later chatting
-        await make_async(embed_and_store_text)(
-            transcript,
-            internal_state.model,
-            internal_state.chunk_settings,
-            internal_state.qdrant_client,
-        )
-        await chainlit_ask_if_new_video(internal_state)
-    else:
-        await cl.Message(content="You did not provide a valid YouTube URL.").send()
-        await chainlit_summarize_video(internal_state)
-
-
-async def chainlit_ask_if_new_video(internal_state):
-    action = await cl.AskActionMessage(
-        content="Do you want to summarize a new video?",
-        actions=[
-            cl.Action(
-                name="New video?",
-                value="new_video",
-                label="🔁 Yes, summarize a new video",
-            ),
-            cl.Action(
-                name="Continue chatting",
-                value="continue",
-                label="➡️  No, continue chatting",
-            ),
-        ],
-    ).send()
-
-    if action and action.get("value") == "new_video":
-        # When we work with a new video, we need to start with a new internal state (new vector database)
-        internal_state = set_internal_state()
-        await chainlit_summarize_video(internal_state)
-
-
-@cl.on_message
-async def on_message(message: cl.Message):
-    internal_state = get_internal_state()
-
-    output = cl.Message(content="")
-    await output.send()
-
-    answer = await make_async(answer_query)(
-        query=message.content,
-        model=internal_state.model,
-        qdrant_client=internal_state.qdrant_client,
-        top_k=Config.RETRIEVAL_TOP_K,
-        use_hypothetical=Config.RETRIEVAL_USE_HYPOTHETICAL,
-    )
-
-    answer = stream_string(answer)
-    async for part in answer:
-        await output.stream_token(part)
-    #output.content = answer # alternative if not streaming
-    await output.update()
-
-    await chainlit_ask_if_new_video(internal_state)
-
+        await answer_question(internal_state)
 
 @cl.on_settings_update
 async def setup_agent(settings):

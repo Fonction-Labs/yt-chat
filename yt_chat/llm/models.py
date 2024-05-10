@@ -26,6 +26,7 @@ class BaseLLM:
             Config.MODEL_TO_GENERATE_SUMMARIZE_SUMMARIES_MESSAGES_FUNC.get(model_name)
         )
 
+
 class OpenAILLM(BaseLLM):
     def __init__(self, model_name: str, api_key: str):
         super().__init__(model_name)

@@ -1,16 +1,31 @@
-# ------ GENERAL MESSAGES (CONTEXT AND HYPOTHETICAL) ------
-def generate_openai_context_message(question, context):
-    # Custom prompt (not sure this is optimal)
-    return [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {
-            "role": "user",
-            "content": f"""Answer the following Question based on the Context only. Only answer from the Context. If you don't know the answer, say 'I don't know'.
-                           Question: {question}\n\n
-                           Context: {context}\n\n
-                           Answer:\n""",
-        },
+from PIL import Image
+from yt_chat.utils.images import encode_image_base64
+
+def message(prompt: str, images: list[Image] = None):
+
+    if images is not None:
+        images = [encode_image_base64(image) for image in images]
+
+    if images is None:
+        images = []
+
+    return [{"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": [{"type": "text", "text": prompt}] + [{"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image}"}} for image in images]},
     ]
+
+# ------ GENERAL MESSAGES (CONTEXT AND HYPOTHETICAL) ------
+def generate_openai_context_message(question: str, context: str, images: list[Image] = None):
+    # Custom prompt (not sure this is optimal)
+    # GPT-4 can handle images
+    prompt = """Answer the following Question based on the Context only. Only answer from the Context. If you don't know the answer, say 'I don't know'.\n"""
+    if images is not None:
+        prompt += """Some additional page images (which corresponds to the Context text content) will be provided to help you answer the Question. They may contain figures or tables.\n"""
+    prompt += """Question: {question}\n\n
+                 Context: {context}\n\n
+                 Answer:\n"""
+
+    return message(prompt, images)
+
 
 
 def generate_mistral_context_message(question, context):
