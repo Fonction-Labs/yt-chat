@@ -86,33 +86,41 @@ async def ask_for_file(internal_state):
             timeout=180,
         ).send()
     file = files[0]
-    # TODO: write temp pdf file and open it
+
+    output = cl.Message(content="")
+    await output.send()
 
     from pypdf import PdfReader
     from tqdm import tqdm
     # Extract text
-    filename = "file.pdf"
+    filename = file.path
     reader = PdfReader(filename)
     pages_text = [page.extract_text() for page in tqdm(reader.pages)]
     # Embed text pages
     for i, text in enumerate(pages_text):
         await make_async(embed_and_store_text)(text, # text for page i
-                                                            {"pdf_page": i, "pdf_filename": filename}, # meta
-                                                            internal_state.model,
-                                                            internal_state.chunk_settings,
-                                                            internal_state.qdrant_client)
+                                               {"pdf_page": i, "pdf_filename": filename}, # meta
+                                               internal_state.model,
+                                               internal_state.chunk_settings,
+                                               internal_state.qdrant_client)
+
+    from pdf2image import convert_from_path
+    import tempfile
+
+    # Create temp dir for image-converted PDF pages
+    temp_dir = tempfile.mkdtemp()
+    cl.user_session.set("temp_dir", temp_dir)
 
     # Convert PDF to images
-    if False: # Set this to true when running for first time
-        from pdf2image import convert_from_path
-        from tqdm import tqdm
-        images = convert_from_path(filename)
-        for i in tqdm(range(len(images))):
-            images[i].save('temp_images/' + 'page'+ str(i) +'.jpg', 'JPEG')
+    images = convert_from_path(filename)
+    for i in tqdm(range(len(images))):
+        images[i].save(os.path.join(temp_dir, f"page{str(i)}.jpg"), "JPEG")
+
+    await output.update()
 
     await on_message(internal_state)
 
-@cl.on_message
+# @cl.on_message
 async def on_message(internal_state):
     question = await cl.AskUserMessage(
         content="Please ask a question on the document."
@@ -128,13 +136,15 @@ async def on_message(internal_state):
             model=internal_state.model,
             qdrant_client=internal_state.qdrant_client,
             top_k=Config.RETRIEVAL_TOP_K,
+            cosine_threshold=Config.RETRIEVAL_COSINE_THRESHOLD,
             use_hypothetical=Config.RETRIEVAL_USE_HYPOTHETICAL,
         )
 
         print("TOP K METAS", top_k_metas)
+        temp_dir = cl.user_session.get("temp_dir")
         page_numbers = sorted([meta["pdf_page"] for meta in top_k_metas])
         for i in page_numbers:
-            image_path = 'temp_images/page' + str(i) + '.jpg'
+            image_path = os.path.join(temp_dir, f"page{str(i)}.jpg")
             image = cl.Image(path=image_path, name="image", display="inline")
             await cl.Message(
                 content=f"Source material (page {str(i)})",
@@ -148,8 +158,8 @@ async def on_message(internal_state):
         await output.update()
 
         await on_message(internal_state)
-    else:
-        await on_message(internal_state)
+    #else:
+    #    await on_message(internal_state)
 
 @cl.on_settings_update
 async def setup_agent(settings):
