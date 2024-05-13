@@ -1,12 +1,14 @@
 from tqdm import tqdm
 from functools import partial
 
-from yt_chat.utils.chunk_text import ChunkSettings, get_text_chunks
+from flib.utils.chunk_text import ChunkSettings, get_text_chunks
 
 def summarize_transcript(
     transcript: str,
     model,
     chunk_settings: ChunkSettings,
+    generate_summarize_transcript_prompt,
+    generate_summarize_summaries_prompt,
 ) -> str:
 
     total_summary = transcript
@@ -17,13 +19,14 @@ def summarize_transcript(
                                       chunk_size=chunk_settings.chunk_size,
                                       chunk_overlap=chunk_settings.chunk_overlap)
         print(f"Split all transcript summaries into {len(transcripts)}")
-        # Generate summarization messages for the model
+        # Generate summarization prompts for the model
         # (the output is [messages1, messages2, ...])
-        list_messages = [model.generate_summarize_transcript_messages_func(transcript) for transcript in transcripts]
-        # Summarize with the model and generated message
-        summaries = model.predict_messages_batch_parallel(list_messages, temperature=0.)
+        prompts = [generate_summarize_transcript_prompt(transcript) for transcript in transcripts]
+        # Summarize with the model and generated prompt
+        #summaries = model.run(prompt=prompts, temperature=0.)
+        summaries = [model.run(prompt=prompt, temperature=0.) for prompt in prompts] #TODO!!! Parallelize
         # Combine summaries into one string
         total_summary = " ".join(summaries)
     # Summarize the final summary
-    messages = model.generate_summarize_summaries_messages_func(total_summary)
-    return model.predict_messages(messages=messages, temperature=0.)
+    prompt = generate_summarize_summaries_prompt(total_summary)
+    return model.run(prompt=prompt, temperature=0.)
