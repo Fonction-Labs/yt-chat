@@ -14,8 +14,8 @@ from yt_chat.utils.youtube import (
 )
 
 from yt_chat.internal_state import InternalState
-from yt_chat.llm.summarize import summarize_transcript
-from yt_chat.llm.answer import embed_and_store_text, answer_query
+from yt_chat.core.summarize import summarize_transcript
+from yt_chat.core.answer import embed_and_store_text, answer_query
 from yt_chat.config import Config
 
 # TODO (optional): use automatic rephrasing of query (perf / quality)
