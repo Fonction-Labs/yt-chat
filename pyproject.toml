@@ -8,14 +8,12 @@ packages = [{include = "yt_chat"}]
 
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 youtube-transcript-api = "^0.6.2"
-openai = "^1.14.3"
-joblib = "^1.4.0"
-ollama = "^0.1.8"
-qdrant-client = "^1.8.2"
 chainlit = "^1.0.504"
 tenacity = "^8.2.3"
+#flib = {path = "./flib", develop = true}
+flib = {git = "https://github.com/Fonction-Labs/flib", branch = "main"} #, tag = "0.1.0"}
 
 [build-system]
 requires = ["poetry-core"]
