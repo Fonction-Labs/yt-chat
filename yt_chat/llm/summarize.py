@@ -23,8 +23,8 @@ def summarize_transcript(
         # (the output is [messages1, messages2, ...])
         prompts = [generate_summarize_transcript_prompt(transcript) for transcript in transcripts]
         # Summarize with the model and generated prompt
-        #summaries = model.run(prompt=prompts, temperature=0.)
-        summaries = [model.run(prompt=prompt, temperature=0.) for prompt in prompts] #TODO!!! Parallelize
+        summaries = model.run_batch(prompts=prompts, temperature=0., parallel=True)
+
         # Combine summaries into one string
         total_summary = " ".join(summaries)
     # Summarize the final summary

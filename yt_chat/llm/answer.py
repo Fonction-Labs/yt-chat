@@ -7,8 +7,7 @@ from flib.utils.qdrant import SingleCollectionQdrantClient
 
 def embed_and_store_chunks(embedding_model, chunks: list[str], qdrant_client: SingleCollectionQdrantClient) -> None:
     # Embed chunks
-    # embeddings = embedding_model.run(chunks)
-    embeddings = [embedding_model.run(chunk) for chunk in chunks] #TODO!!! Parallelize
+    embeddings = embedding_model.run_batch(chunks, parallel=True)
 
     # Store embedded chunks
     qdrant_client.upsert(
