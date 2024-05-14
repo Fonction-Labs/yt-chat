@@ -1,12 +1,8 @@
-from .config_messages import (
-    generate_openai_context_message,
-    generate_mistral_context_message,
-    generate_openai_hypothetical_message,
-    generate_mistral_hypothetical_message,
-    generate_openai_summarize_transcript_message,
-    generate_mistral_summarize_transcript_message,
-    generate_openai_summarize_summaries_message,
-    generate_mistral_summarize_summaries_message,
+from .config_prompts import (
+    generate_openai_context_prompt,
+    generate_mistral_context_prompt,
+    generate_openai_hypothetical_prompt,
+    generate_mistral_hypothetical_prompt,
 )
 
 class Config:
@@ -16,7 +12,7 @@ class Config:
     - LLM models properties
 
     Model names are mapped to various model properties and
-    message (prompts) generation functions.
+    prompt generation functions.
     """
 
     QDRANT_COLLECTION_NAME = "qdrant"
@@ -25,54 +21,18 @@ class Config:
 
     RETRIEVAL_USE_HYPOTHETICAL = True
 
-    RETRIEVAL_TOP_K = 2
+    RETRIEVAL_TOP_K = 5
 
-    RETRIEVAL_COSINE_THRESHOLD = 0.2
+    RETRIEVAL_COSINE_THRESHOLD = 0.5
 
-    MODEL_TO_MODEL_REF_NAME = {
-        "chatgpt": "gpt-3.5-turbo",
-        "chatgpt4": "gpt-4-turbo",
-        "mistral": "mistral",
+    HYPOTHETICAL_PROMPT_FUNC = {
+        "gpt-3.5-turbo": generate_openai_hypothetical_prompt,
+        "gpt-4-turbo": generate_openai_hypothetical_prompt,
+        "mistral": generate_mistral_hypothetical_prompt,
     }
 
-    MODEL_TO_EMBEDDING_MODEL_NAME = {
-        "chatgpt": "text-embedding-3-small",  # small embedding
-        "chatgpt4": "text-embedding-3-small", # small embedding
-        "mistral": None,  # not required by ollama models
-    }
-
-    MODEL_TO_EMBEDDING_VECTOR_SIZE = {
-        "chatgpt": 1536,  # small embedding
-        "chatgpt4": 1536,  # small embedding
-        "mistral": 4096,
-    }
-
-    MODEL_TO_CONTEXT_WINDOW_TOKEN_SIZE = {
-        "chatgpt": 4096,
-        "chatgpt4": 128000,
-        "mistral": 4096,
-    }
-
-    MODEL_TO_GENERATE_CONTEXT_MESSAGES_FUNC = {
-        "chatgpt": generate_openai_context_message,
-        "chatgpt4": generate_openai_context_message,
-        "mistral": generate_mistral_context_message,
-    }
-
-    MODEL_TO_GENERATE_HYPOTHETICAL_MESSAGES_FUNC = {
-        "chatgpt": generate_openai_hypothetical_message,
-        "chatgpt4": generate_openai_hypothetical_message,
-        "mistral": generate_mistral_hypothetical_message,
-    }
-
-    MODEL_TO_GENERATE_SUMMARIZE_TRANSCRIPT_MESSAGES_FUNC = {
-        "chatgpt": generate_openai_summarize_transcript_message,
-        "chatgpt4": generate_openai_summarize_transcript_message,
-        "mistral": generate_mistral_summarize_transcript_message,
-    }
-
-    MODEL_TO_GENERATE_SUMMARIZE_SUMMARIES_MESSAGES_FUNC = {
-        "chatgpt": generate_openai_summarize_summaries_message,
-        "chatgpt4": generate_openai_summarize_summaries_message,
-        "mistral": generate_mistral_summarize_summaries_message,
+    CONTEXT_PROMPT_FUNC = {
+        "gpt-3.5-turbo": generate_openai_context_prompt,
+        "gpt-4-turbo": generate_openai_context_prompt,
+        "mistral": generate_mistral_context_prompt,
     }

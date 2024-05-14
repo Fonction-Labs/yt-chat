@@ -4,16 +4,12 @@ from chainlit import make_async
 from openai import OpenAIError
 from typing import Optional
 
+from flib.models.openai import OpenAIGPTModel, OpenAIEmbeddingModel
+from flib.models.ollama import OllamaModel, OllamaEmbeddingModel
+from flib.utils.stream import stream_string
+
 from yt_chat.internal_state import InternalState
-
-from yt_chat.utils.stream import stream_string
-from yt_chat.utils.youtube import (
-    is_valid_youtube_url,
-    get_video_transcript_and_duration,
-)
-from yt_chat.llm.summarize import summarize_transcript
-from yt_chat.llm.answer import embed_and_store_text, answer_query
-
+from yt_chat.core.answer import embed_and_store_text, answer_query
 from yt_chat.config import Config
 
 # TODO (optional): use automatic rephrasing of query (perf / quality)
@@ -22,20 +18,27 @@ from yt_chat.config import Config
 
 # ------ CHAINLIT CHAT PROFILES AND INTERNAL STATE ------
 
-CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "chatgpt4"} #, "Mistral": "mistral"}
-
 
 def set_internal_state() -> InternalState:
     chat_profile = cl.user_session.get("chat_profile")
     api_key = cl.user_session.get("env")["OPENAI_API_KEY"]
 
-    model_name = CHAT_PROFILE_TO_MODEL_NAME.get(chat_profile)
-    if model_name:
-        internal_state = InternalState(model_name, api_key)
-        cl.user_session.set("internal_state", internal_state)
-        return internal_state
+    # Cannot do a dic config, or else all models will be loaded in memory which is not desirable.
+    if chat_profile == "ChatGPT":
+        model = OpenAIGPTModel("gpt-3.5-turbo", api_key)
+        embedding_model = OpenAIEmbeddingModel("text-embedding-3-small", api_key)
+    elif chat_profile == "ChatGPT-4":
+        model = OpenAIGPTModel("gpt-4-turbo", api_key)
+        embedding_model = OpenAIEmbeddingModel("text-embedding-3-small", api_key)
+    elif chat_profile == "Mistral":
+        model = OllamaModel("mistral")
+        embedding_model = OllamaEmbeddingModel("mistral")
     else:
-        raise ValueError("Unknown chat profile or model name")
+        raise ValueError(f"Cannot find model for profile {chat_profile}. Make sure that you selected a correct profile.")
+
+    internal_state = InternalState(model, embedding_model)
+    cl.user_session.set("internal_state", internal_state)
+    return internal_state
 
 
 def get_internal_state() -> Optional[InternalState]:
@@ -46,14 +49,9 @@ def get_internal_state() -> Optional[InternalState]:
 async def chat_profile():
     return [
         cl.ChatProfile(
-            name="ChatGPT",
-            markdown_description="The underlying LLM model is **GPT-3.5**.",
+            name="ChatGPT-4",
+            markdown_description="The underlying LLM model is **GPT-4**.",
             icon="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png",
-        ),
-        cl.ChatProfile(
-            name="Mistral",
-            markdown_description="The underlying LLM model is **Mistral 7B**.",
-            icon="https://cdn.jaimelesstartups.fr/wp-content/uploads/2024/02/announcing-mistral.png",
         ),
     ]
 
@@ -86,35 +84,37 @@ async def ask_for_file(internal_state):
             timeout=180,
         ).send()
     file = files[0]
+    filepath = file.path
+    filename = filepath.split("/")[-1]
 
     output = cl.Message(content="")
     await output.send()
 
     from pypdf import PdfReader
     from tqdm import tqdm
-    # Extract text
-    filename = file.path
-    reader = PdfReader(filename)
-    pages_text = [page.extract_text() for page in tqdm(reader.pages)]
-    # Embed text pages
-    for i, text in enumerate(pages_text):
-        await make_async(embed_and_store_text)(text, # text for page i
-                                               {"pdf_page": i, "pdf_filename": filename}, # meta
-                                               internal_state.model,
-                                               internal_state.chunk_settings,
-                                               internal_state.qdrant_client)
-
     from pdf2image import convert_from_path
     import tempfile
-
     # Create temp dir for image-converted PDF pages
     temp_dir = tempfile.mkdtemp()
     cl.user_session.set("temp_dir", temp_dir)
-
     # Convert PDF to images
-    images = convert_from_path(filename)
+    images = convert_from_path(filepath)
     for i in tqdm(range(len(images))):
-        images[i].save(os.path.join(temp_dir, f"page{str(i)}.jpg"), "JPEG")
+        images[i].save(os.path.join(temp_dir, f"{filename}_page{str(i)}.jpg"), "JPEG")
+
+    # Extract text
+    reader = PdfReader(filepath)
+    pages_text = [page.extract_text() for page in tqdm(reader.pages)]
+    # Embed text pages
+    # /var/folders/ss/750ds0zs2sj6r9gvwhtbxsgc0000gn/T/tmph_zcq8fj/page5.jp
+    print("FILEPATH", filepath)
+    print("FILENAME", filename)
+    for i, text in enumerate(pages_text):
+        await make_async(embed_and_store_text)(text, # text for page i
+                                               {"pdf_page": i, "jpg_path": os.path.join(temp_dir, f"{filename}_page{str(i)}.jpg")}, # meta
+                                               internal_state.embedding_model,
+                                               internal_state.chunk_settings,
+                                               internal_state.qdrant_client)
 
     await output.update()
 
@@ -134,7 +134,10 @@ async def on_message(internal_state):
         response, top_k_metas = await make_async(answer_query)(
             query=question,
             model=internal_state.model,
+            embedding_model=internal_state.embedding_model,
             qdrant_client=internal_state.qdrant_client,
+            generate_hypothetical_prompt=internal_state.generate_hypothetical_prompt,
+            generate_context_prompt=internal_state.generate_context_prompt,
             top_k=Config.RETRIEVAL_TOP_K,
             cosine_threshold=Config.RETRIEVAL_COSINE_THRESHOLD,
             use_hypothetical=Config.RETRIEVAL_USE_HYPOTHETICAL,
@@ -142,12 +145,11 @@ async def on_message(internal_state):
 
         print("TOP K METAS", top_k_metas)
         temp_dir = cl.user_session.get("temp_dir")
-        page_numbers = sorted([meta["pdf_page"] for meta in top_k_metas])
-        for i in page_numbers:
-            image_path = os.path.join(temp_dir, f"page{str(i)}.jpg")
-            image = cl.Image(path=image_path, name="image", display="inline")
+        metas = sorted(top_k_metas, key=lambda meta : meta["pdf_page"])
+        for meta in metas:
+            image = cl.Image(path=meta["jpg_path"], name="image", display="inline")
             await cl.Message(
-                content=f"Source material (page {str(i)})",
+                content=f"Source material (page {str(meta['pdf_page'])})",
                 elements=[image],
             ).send()
 

@@ -2,13 +2,13 @@ import uuid
 
 from qdrant_client.http.models import PointStruct
 
-from yt_chat.utils.chunk_text import ChunkSettings, get_text_chunks
-from yt_chat.utils.qdrant import SingleCollectionQdrantClient
-from yt_chat.utils.images import load_image
+from flib.utils.chunk_text import ChunkSettings, get_text_chunks
+from flib.utils.qdrant import SingleCollectionQdrantClient
+from flib.utils.images import load_image
 
-def embed_and_store_chunks(model, chunks: list[str], metas: list[dict], qdrant_client: SingleCollectionQdrantClient) -> None:
+def embed_and_store_chunks(embedding_model, chunks: list[str], metas: list[dict], qdrant_client: SingleCollectionQdrantClient) -> None:
     # Embed chunks
-    embeddings = model.embed_batch_parallel(chunks)
+    embeddings = embedding_model.run_batch(chunks, parallel=True)
 
     # Store embedded chunks
     qdrant_client.upsert(
@@ -23,7 +23,7 @@ def embed_and_store_chunks(model, chunks: list[str], metas: list[dict], qdrant_c
         ],
     )
 
-def embed_and_store_text(text: str, meta: dict, model, chunk_settings: ChunkSettings, qdrant_client: SingleCollectionQdrantClient):
+def embed_and_store_text(text: str, meta: dict, embedding_model, chunk_settings: ChunkSettings, qdrant_client: SingleCollectionQdrantClient):
     # Cut transcript text into chunks
     chunks = get_text_chunks(
         text, chunk_settings.chunk_size, chunk_settings.chunk_overlap
@@ -31,17 +31,17 @@ def embed_and_store_text(text: str, meta: dict, model, chunk_settings: ChunkSett
     metas = [meta for i in range(len(chunks))] # TODO: fix? We copy the same meta for all chunks of the same text
 
     # Embed and store chunks
-    embed_and_store_chunks(model, chunks, metas, qdrant_client)
+    embed_and_store_chunks(embedding_model, chunks, metas, qdrant_client)
 
 def retrieve_top_k_chunks_for_query(
-        model, query: str, qdrant_client: SingleCollectionQdrantClient, top_k: int, cosine_threshold: float = -1.,
+        embedding_model, query: str, qdrant_client: SingleCollectionQdrantClient, top_k: int, cosine_threshold: float = -1.,
 ) -> list[str, dict]:
     """
     Embeds a query with a given model, and return top_k chunks ((text, meta) tuples) in the collection
     with highest embedded vector similarity.
     """
     # Embed query
-    query_embedding = model.embed(query)
+    query_embedding = embedding_model.run(query)
 
     # Retrieve top_k chunks with highest similarity in the collection
     query_results = qdrant_client.search(qdrant_client.collection_name, query_vector=query_embedding, limit=top_k)
@@ -51,8 +51,10 @@ def retrieve_top_k_chunks_for_query(
 
     return [(result.payload["text"], result.payload["meta"]) for result in query_results]
 
-def answer_query(query: str, model,
+def answer_query(query: str, model, embedding_model,
                  qdrant_client: SingleCollectionQdrantClient,
+                 generate_hypothetical_prompt,
+                 generate_context_prompt,
                  top_k: int,
                  cosine_threshold: float = -1.,
                  use_hypothetical: bool = True):
@@ -68,15 +70,19 @@ def answer_query(query: str, model,
 
     # If use_hypothetical, formulate a fake answer to the question to improve embeddings retrieval
     if use_hypothetical:
-        messages_hypothetical = model.generate_hypothetical_messages_func(question=query)
-        query = model.predict_messages(messages_hypothetical, temperature=0.7)
+        prompt = generate_hypothetical_prompt(question=query)
+        query = model.run(prompt, temperature=0.7)
 
     # TODO: if nothing is retrieved (due to cosine threshold), answer "could not find context" in chat
 
     # Retrieve top_k chunks for query
     top_k_chunks_for_query = retrieve_top_k_chunks_for_query(
-        model, query, qdrant_client, top_k=top_k, cosine_threshold=cosine_threshold,
+        embedding_model, query, qdrant_client, top_k=top_k, cosine_threshold=cosine_threshold,
     )
+
+    if len(top_k_chunks_for_query) == 0:
+        return ("Sorry, I could not retrieve context to answer your question.", [])
+
     top_k_texts_for_query, top_k_metas_for_query = zip(*top_k_chunks_for_query)
 
     # Merge top_k chunks into a single string for context
@@ -84,12 +90,12 @@ def answer_query(query: str, model,
 
     images = None
     if top_k_metas_for_query:
-        images = [load_image('temp_images/' + 'page'+ str(meta["pdf_page"]) +'.jpg') for meta in top_k_metas_for_query]
+        images = [load_image(meta["jpg_path"]) for meta in top_k_metas_for_query]
 
-    # Generate LLM "context"-type message
-    messages_with_context = model.generate_context_messages_func(question=original_query, context=context, images=images)
+    # Generate LLM "context"-type prompt
+    prompt = generate_context_prompt(question=original_query, context=context)
 
     # Get LLM response
-    bot_response = model.predict_messages(messages_with_context, temperature=0.)
+    bot_response = model.run(prompt=prompt, images=images, temperature=0.)
 
     return bot_response, top_k_metas_for_query
