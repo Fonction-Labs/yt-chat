@@ -4,16 +4,18 @@ from chainlit import make_async
 from openai import OpenAIError
 from typing import Optional
 
-from yt_chat.internal_state import InternalState
+from flib.models.openai import OpenAIGPTModel, OpenAIEmbeddingModel
+from flib.models.ollama import OllamaModel, OllamaEmbeddingModel
 
-from yt_chat.utils.stream import stream_string
+from flib.utils.stream import stream_string
 from yt_chat.utils.youtube import (
     is_valid_youtube_url,
     get_video_transcript_and_duration,
 )
-from yt_chat.llm.summarize import summarize_transcript
-from yt_chat.llm.answer import embed_and_store_text, answer_query
 
+from yt_chat.internal_state import InternalState
+from yt_chat.core.summarize import summarize_transcript
+from yt_chat.core.answer import embed_and_store_text, answer_query
 from yt_chat.config import Config
 
 # TODO (optional): use automatic rephrasing of query (perf / quality)
@@ -22,20 +24,27 @@ from yt_chat.config import Config
 
 # ------ CHAINLIT CHAT PROFILES AND INTERNAL STATE ------
 
-CHAT_PROFILE_TO_MODEL_NAME = {"ChatGPT": "chatgpt", "Mistral": "mistral"}
-
 
 def set_internal_state() -> InternalState:
     chat_profile = cl.user_session.get("chat_profile")
     api_key = cl.user_session.get("env")["OPENAI_API_KEY"]
 
-    model_name = CHAT_PROFILE_TO_MODEL_NAME.get(chat_profile)
-    if model_name:
-        internal_state = InternalState(model_name, api_key)
-        cl.user_session.set("internal_state", internal_state)
-        return internal_state
+    # Cannot do a dic config, or else all models will be loaded in memory which is not desirable.
+    if chat_profile == "ChatGPT":
+        model = OpenAIGPTModel("gpt-3.5-turbo", api_key)
+        embedding_model = OpenAIEmbeddingModel("text-embedding-3-small", api_key)
+    elif chat_profile == "ChatGPT-4":
+        model = OpenAIGPTModel("gpt-4-turbo", api_key)
+        embedding_model = OpenAIEmbeddingModel("text-embedding-3-small", api_key)
+    elif chat_profile == "Mistral":
+        model = OllamaModel("mistral")
+        embedding_model = OllamaEmbeddingModel("mistral")
     else:
-        raise ValueError("Unknown chat profile or model name")
+        raise ValueError(f"Cannot find model for profile {chat_profile}. Make sure that you selected a correct profile.")
+
+    internal_state = InternalState(model, embedding_model)
+    cl.user_session.set("internal_state", internal_state)
+    return internal_state
 
 
 def get_internal_state() -> Optional[InternalState]:
@@ -48,6 +57,11 @@ async def chat_profile():
         cl.ChatProfile(
             name="ChatGPT",
             markdown_description="The underlying LLM model is **GPT-3.5**.",
+            icon="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png",
+        ),
+        cl.ChatProfile(
+            name="ChatGPT-4",
+            markdown_description="The underlying LLM model is **GPT-4**.",
             icon="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png",
         ),
         cl.ChatProfile(
@@ -101,7 +115,8 @@ async def chainlit_summarize_video(internal_state):
         # Summarize transcript
         try:
             summary = await make_async(summarize_transcript)(
-                transcript, internal_state.model, internal_state.chunk_settings
+                transcript, internal_state.model, internal_state.chunk_settings,
+                internal_state.generate_summarize_transcript_prompt, internal_state.generate_summarize_summaries_prompt,
             )
             summary = f"Here is the summary of the YouTube video:\n{summary}\n\n**yt-chat** just saved you **{duration} minutes** of your life! 🕰️ "
         except OpenAIError as e:
@@ -120,7 +135,7 @@ async def chainlit_summarize_video(internal_state):
         # Compute and store embeddings for later chatting
         await make_async(embed_and_store_text)(
             transcript,
-            internal_state.model,
+            internal_state.embedding_model,
             internal_state.chunk_settings,
             internal_state.qdrant_client,
         )
@@ -163,7 +178,10 @@ async def on_message(message: cl.Message):
     answer = await make_async(answer_query)(
         query=message.content,
         model=internal_state.model,
+        embedding_model=internal_state.embedding_model,
         qdrant_client=internal_state.qdrant_client,
+        generate_hypothetical_prompt=internal_state.generate_hypothetical_prompt,
+        generate_context_prompt=internal_state.generate_context_prompt,
         top_k=Config.RETRIEVAL_TOP_K,
         use_hypothetical=Config.RETRIEVAL_USE_HYPOTHETICAL,
     )
