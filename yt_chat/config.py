@@ -19,6 +19,8 @@ class Config:
     prompt generation functions.
     """
 
+    LIMIT_RATE = "5/day"
+
     QDRANT_COLLECTION_NAME = "qdrant"
 
     QDRANT_HOST = ":memory:" # can also be "https://<myaddress>:<myport>" (default Qdrant port is 6333)

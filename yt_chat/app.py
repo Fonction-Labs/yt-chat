@@ -1,5 +1,7 @@
 import os
 import chainlit as cl
+import limits
+
 from chainlit import make_async
 from openai import OpenAIError
 from typing import Optional
@@ -74,8 +76,24 @@ async def chat_profile():
 
 # ------------
 
-# ------ CHAINLIT PROCESSES ------
+# ------ RATE LIMIT INIT -----
 
+# Define storage
+memory_storage = limits.storage.MemoryStorage()
+# Define strategy
+moving_window = limits.strategies.MovingWindowRateLimiter(memory_storage)
+# Define rate
+rate = limits.parse(Config.LIMIT_RATE)
+
+async def is_limited():
+    ip = cl.user_session.get("ip")
+    if not moving_window.hit(rate, ip, "foo"): # if limit hit
+        await limit_hit()
+
+# ------------
+
+
+# ------ CHAINLIT PROCESSES ------
 
 @cl.on_chat_start
 async def main():
@@ -90,6 +108,12 @@ async def main():
     await chainlit_summarize_video(internal_state)
 
 
+async def limit_hit():
+    n, time_window = Config.LIMIT_RATE.split("/")
+    _ = await cl.AskUserMessage(content=f"**Rate limit exceeded.**\n\n**You can only summarize up to {n} YouTube videos per {time_window}. Come back later!**").send()
+    await limit_hit()
+
+
 async def chainlit_summarize_video(internal_state):
     response = await cl.AskUserMessage(
         content="Please specify a YouTube URL for a video you want to summarize."
@@ -97,6 +121,12 @@ async def chainlit_summarize_video(internal_state):
 
     if response and is_valid_youtube_url(response["output"]):
         video_url = response["output"]
+
+        await is_limited()
+
+        # Debug
+        #await cl.Message(content="Here is your summary").send()
+        #await chainlit_summarize_video(internal_state)
 
         # Get video transcript
         transcript, duration = await make_async(get_video_transcript_and_duration)(
