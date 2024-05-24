@@ -10,10 +10,15 @@ packages = [{include = "yt_chat"}]
 [tool.poetry.dependencies]
 python = "^3.10"
 youtube-transcript-api = "^0.6.2"
-chainlit = "^1.0.504"
+# TODO: change this once the fork has been merged onto the official chainlit repo
+#chainlit = "^1.0.504"
+#chainlit = {path = "../chainlit/backend", develop = true}
+#chainlit = {file = "chainlit-1.1.101-py3-none-any.whl"}
+chainlit = {url = "https://github.com/acordier16/chainlit_httpforwardedfor/releases/download/httpforwardedfor/chainlit-1.1.101-py3-none-any.whl"}
 tenacity = "^8.2.3"
-#flib = {path = "./flib", develop = true}
+#flib = {path = "../flib", develop = true}
 flib = {git = "https://github.com/Fonction-Labs/flib", branch = "main"} #, tag = "0.1.0"}
+limits = "^3.12.0"
 
 [build-system]
 requires = ["poetry-core"]
