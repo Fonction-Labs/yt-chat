@@ -1,3 +1,5 @@
+# TODO: handle original language for Mistral prompts
+
 # ------ GENERAL PROMPTS (CONTEXT AND HYPOTHETICAL) ------
 def generate_openai_context_prompt(question: str, context: str) -> str:
     # Custom prompt (not sure this is optimal)
@@ -19,7 +21,7 @@ def generate_mistral_context_prompt(question: str, context: str) -> str:
 
 def generate_openai_hypothetical_prompt(question: str) -> str:
     # Prompt from: https://docs.haystack.deepset.ai/docs/hypothetical-document-embeddings-hyde
-    return f"""Given a question, generate a paragraph of text that answers the question.    Question: {question}    Paragraph:"""
+    return f"""Given a question, generate a paragraph of text that answers the question. Use the original language of the question to answer.    Question: {question}    Paragraph:"""
 
 def generate_mistral_hypothetical_prompt(question: str) -> str:
     # Same prompt as OpenAI with additional "the same way it was formulated"
@@ -29,7 +31,7 @@ def generate_mistral_hypothetical_prompt(question: str) -> str:
 # (these are all custom prompts)
 
 def generate_openai_summarize_transcript_prompt(transcript: str) -> str:
-    return f"""Write a detailed summary of the following youtube video transcript.
+    return f"""Write a detailed summary of the following youtube video transcript. Use the original language of the transcript to write your summary.
                 "{transcript}".
                 CONCISE SUMMARY:
             """
@@ -43,7 +45,7 @@ def generate_mistral_summarize_transcript_prompt(transcript: str) -> str:
 def generate_openai_summarize_summaries_prompt(summaries: str) -> str:
     return f"""The following is set of summaries:
               "{summaries}"
-              Take these and distill it into a final, consolidated detailed summary of 3 to 5 paragraphs with some subtitles for each paragraph (with markdown format).
+              Take these and distill it into a final, consolidated summary of 3 to 5 paragraphs with some subtitles for each paragraph. Use the original language of the summaries to write your final summary.
               Helpful Answer:
               """
 
