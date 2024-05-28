@@ -28,7 +28,8 @@ def get_video_transcript_and_duration(video_url):
     """
     try:
         video_id = extract_video_id(video_url)
-        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=["en", "fr"])
+        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=["fr", "en"])
+        print(transcript)
         duration = int(transcript[-1]["start"] // 60)
         transcript = reduce(lambda x, y: x + " " + y, map(lambda x: x["text"], transcript))
         return transcript, duration
