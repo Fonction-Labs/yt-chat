@@ -1,3 +1,5 @@
+# TODO: handle original language for Mistral prompts
+
 # ------ GENERAL PROMPTS (CONTEXT AND HYPOTHETICAL) ------
 def generate_openai_context_prompt(question: str, context: str) -> str:
     # Custom prompt (not sure this is optimal)
