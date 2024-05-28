@@ -2,24 +2,18 @@ import re
 from functools import reduce
 from youtube_transcript_api import YouTubeTranscriptApi
 
-def is_valid_youtube_url(url):
-    """
-    Check if the given string is a valid YouTube URL.
-
-    Args:
-    url (str): The string to be checked.
-
-    Returns:
-    bool: True if the string is a valid YouTube URL, False otherwise.
-    """
-    youtube_pattern = (
-        r'(https?://)?(www\.)?'
-        '(youtube|youtu|youtube-nocookie)\.(com|be)/'
-        '(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})'
-    )
-    match = re.match(youtube_pattern, url)
-    return bool(match)
-
+def extract_video_id(url):
+    # Regular expressions for different URL formats
+    regex_patterns = [
+        r'(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})',
+        r'(?:https?:\/\/)?(?:m\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})',
+        r'(?:https?:\/\/)?youtu\.be\/([a-zA-Z0-9_-]{11})'
+    ]
+    for pattern in regex_patterns:
+        match = re.match(pattern, url)
+        if match:
+            return match.group(1)
+    return None
 
 def get_video_transcript_and_duration(video_url):
     """
@@ -33,7 +27,7 @@ def get_video_transcript_and_duration(video_url):
         duration: the duration of the video in minutes.
     """
     try:
-        video_id = video_url.split("v=")[-1]
+        video_id = extract_video_id(video_url)
         transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=["en", "fr"])
         duration = int(transcript[-1]["start"] // 60)
         transcript = reduce(lambda x, y: x + " " + y, map(lambda x: x["text"], transcript))

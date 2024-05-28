@@ -11,7 +11,7 @@ from flib.models.ollama import OllamaModel, OllamaEmbeddingModel
 
 from flib.utils.stream import stream_string
 from yt_chat.utils.youtube import (
-    is_valid_youtube_url,
+    extract_video_id,
     get_video_transcript_and_duration,
 )
 
@@ -119,7 +119,7 @@ async def chainlit_summarize_video(internal_state):
         content="Please specify a YouTube URL for a video you want to summarize."
     ).send()
 
-    if response and is_valid_youtube_url(response["output"]):
+    if response and (extract_video_id(response["output"]) is not None):
         video_url = response["output"]
 
         await is_limited()
