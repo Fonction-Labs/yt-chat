@@ -1,0 +1,4 @@
+interface:
+  display_name: "YouTube Video Doc"
+  short_description: "Read and search YouTube transcripts as timestamped documents"
+  default_prompt: "Use $youtube-video-doc to fetch the transcript for this YouTube video, then read or search the relevant passages before answering."

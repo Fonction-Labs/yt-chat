@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if command -v yt-video >/dev/null 2>&1; then
+  exec yt-video "$@"
+fi
+
+if command -v uvx >/dev/null 2>&1; then
+  exec uvx --from "git+https://github.com/mcordier/yt-chat.git@main" yt-video "$@"
+fi
+
+echo "yt-video is not installed and uvx is unavailable. Install uv or this repo locally first." >&2
+exit 1

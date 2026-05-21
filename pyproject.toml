@@ -1,25 +1,31 @@
-[tool.poetry]
-name = "yt-chat"
+[project]
+name = "yt-video-doc"
 version = "0.1.0"
-description = "A Flask application for summarizing YouTube videos and chatting with a bot."
-authors = ["mcordier <matt.cordier@icloud.com>"]
+description = "Read YouTube videos as timestamped transcript documents through a CLI or MCP server."
 readme = "README.md"
-packages = [{include = "yt_chat"}]
+requires-python = ">=3.10,<3.15"
+authors = [{ name = "mcordier", email = "matt.cordier@icloud.com" }]
+dependencies = [
+    "mcp[cli]>=1.20.0,<2.0.0",
+    "youtube-transcript-api>=1.2.4,<2.0.0",
+    "yt-dlp>=2025.1.15,<2027",
+]
 
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5,<9.0.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-youtube-transcript-api = "^0.6.2"
-# TODO: change this once the fork has been merged onto the official chainlit repo
-#chainlit = "^1.0.504"
-#chainlit = {path = "../chainlit/backend", develop = true}
-#chainlit = {file = "chainlit-1.1.101-py3-none-any.whl"}
-chainlit = {url = "https://github.com/acordier16/chainlit_httpforwardedfor/releases/download/httpforwardedfor/chainlit-1.1.101-py3-none-any.whl"}
-tenacity = "^8.2.3"
-#flib = {path = "../flib", develop = true}
-flib = {git = "https://github.com/Fonction-Labs/flib", branch = "main"} #, tag = "0.1.0"}
-limits = "^3.12.0"
+[project.scripts]
+yt-video = "yt_video_doc.cli:main"
+yt-video-mcp = "yt_video_doc.mcp_server:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["yt_video_doc"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"

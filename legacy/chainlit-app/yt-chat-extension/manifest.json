@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Reading time",
+  "version": "1.0",
+  "description": "Add yt-chat to youtube as a copilot",
+
+  "icons": {
+  },
+  "content_scripts": [
+    {
+      "js": ["scripts/content.js"],
+      "matches": [
+        "https://www.youtube.com/watch?v=*"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
+}
