@@ -15,7 +15,7 @@
 
 ## What changed
 
-yt-chat now does two things: a small Python script fetches a video's public captions without a YouTube API key, and your AI assistant uses the timestamped transcript to summarize the video or answer your questions. The Chainlit app, model configuration, Qdrant, Docker, and Poetry have been removed. There is no mandatory summary before you ask questions.
+yt-chat now does two things: a small Python script fetches a video's public captions, and your AI assistant uses the timestamped transcript to summarize the video or answer your questions. The Chainlit app, model configuration, Qdrant, Docker, and Poetry have been removed. There is no mandatory summary before you ask questions.
 
 ## Install
 
@@ -27,7 +27,7 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 ```
 
-Invoke `$yt-chat` or simply share a YouTube link and ask for a summary or pose a question. The skill uses the assistant's existing model; it needs no separate OpenAI API key.
+Invoke `$yt-chat` or simply share a YouTube link and ask for a summary or pose a question. The skill uses the assistant's existing model.
 
 ## Run the script directly
 
